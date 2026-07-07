@@ -9,7 +9,7 @@ https://vera-bot-production-7e46.up.railway.app
 
 ## For the Evaluator — How to Test
 
-The bot is live on Railway. No setup needed on your end.
+The bot is live on Railway.
 
 ### Quick health check
 ```bash

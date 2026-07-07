@@ -9,6 +9,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -38,6 +41,27 @@ merchant_auto_reply_counts: Dict[str, int] = {}
 sent_suppression_keys: set = set()
 
 app = FastAPI(title="Vera Bot", version="1.0.0")
+
+# CORS — allow the frontend served at the same origin + any localhost dev port
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Serve the dashboard at /
+import os as _os
+_static_dir = _os.path.join(_os.path.dirname(__file__), "static")
+if _os.path.isdir(_static_dir):
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+@app.get("/")
+def dashboard():
+    index = _os.path.join(_static_dir, "index.html")
+    if _os.path.isfile(index):
+        return FileResponse(index)
+    return {"message": "Vera Bot is running. Dashboard at /static/index.html"}
 
 # ---------------------------------------------------------------------------
 # Helpers

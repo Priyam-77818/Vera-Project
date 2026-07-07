@@ -1,0 +1,2449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vera Dashboard — magicpin AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS RESET + CUSTOM PROPERTIES  — Clean White palette
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* Backgrounds — clean white/grey */
+  --bg-deep:      #f5f6fa;
+  --bg-card:      #ffffff;
+  --bg-card2:     #f0f2f8;
+  --bg-card3:     #e8eaf2;
+
+  /* Magicpin-inspired accent system — vibrant purple/pink */
+  --olive:        #5b5ea6;
+  --olive-light:  #7c7fc8;
+  --olive-bright: #6c63ff;
+  --olive-glow:   #a78bfa;
+  --accent-grad:  linear-gradient(135deg, #6c63ff 0%, #a855f7 50%, #ec4899 100%);
+  --accent-1:     #6c63ff;
+  --accent-2:     #a855f7;
+  --accent-3:     #ec4899;
+
+  /* Status colors */
+  --green:        #16a34a;
+  --amber:        #d97706;
+  --red:          #dc2626;
+  --blue:         #2563eb;
+
+  /* Typography */
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+
+  /* Borders */
+  --border:       rgba(0,0,0,0.08);
+  --border-hover: rgba(108,99,255,0.30);
+
+  /* Shape */
+  --radius:    14px;
+  --radius-sm: 9px;
+  --shadow:    0 2px 12px rgba(0,0,0,0.08);
+  --transition: 0.2s ease;
+}
+html, body {
+  height: 100%; font-family: 'Inter', sans-serif;
+  background: var(--bg-deep); color: var(--text-primary);
+  font-size: 14px; line-height: 1.6; overflow: hidden;
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(108,99,255,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(108,99,255,0.4); }
+
+/* ============================================================
+   STATUS BAR
+   ============================================================ */
+#status-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 42px; background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex; align-items: center; gap: 24px;
+  padding: 0 24px; font-size: 12px;
+}
+.status-item { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); transition: var(--transition); }
+.status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-dot 2.5s infinite; }
+.status-dot.offline { background: var(--red); }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-label { font-weight: 600; color: var(--text-primary); }
+.status-sep { color: var(--text-muted); opacity: 0.5; }
+#status-model { color: var(--accent-1); font-weight: 600; }
+#status-uptime { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.ctx-count {
+  background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.15);
+  border-radius: 5px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app { display: flex; height: 100vh; padding-top: 42px; }
+#sidebar {
+  width: 264px; min-width: 264px; height: 100%;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+}
+#main-panel {
+  flex: 1; height: 100%; overflow-y: auto; background: var(--bg-deep);
+}
+#right-panel {
+  width: 300px; min-width: 300px; height: 100%;
+  background: var(--bg-card); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar-logo {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo-mark { display: flex; align-items: center; gap: 12px; }
+.logo-icon {
+  width: 38px; height: 38px; border-radius: 11px;
+  background: var(--accent-grad);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: #0d1208;
+  box-shadow: 0 4px 14px rgba(143,164,74,0.35);
+}
+.logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; }
+.logo-text span {
+  background: var(--accent-grad);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.logo-sub {
+  font-size: 10px; color: var(--text-muted); margin-top: 3px;
+  letter-spacing: 0.8px; text-transform: uppercase; font-weight: 500;
+}
+
+/* Nav tabs */
+.sidebar-nav { padding: 14px 10px 6px; flex-shrink: 0; }
+.nav-tab {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 13px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: var(--transition);
+  color: var(--text-secondary); font-weight: 500; font-size: 13px;
+  margin-bottom: 3px; letter-spacing: 0.1px;
+}
+.nav-tab:hover { background: var(--bg-card2); color: var(--text-primary); }
+.nav-tab.active {
+  background: rgba(108,99,255,0.10);
+  color: var(--accent-1);
+  border-left: 3px solid var(--accent-1);
+  padding-left: 10px;
+}
+.nav-tab .tab-icon { font-size: 15px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto; background: var(--red); color: white;
+  font-size: 10px; font-weight: 700; padding: 2px 7px;
+  border-radius: 10px; min-width: 20px; text-align: center;
+}
+
+/* Merchant list */
+.sidebar-section-header {
+  padding: 10px 20px 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
+  flex-shrink: 0;
+}
+#merchant-list { flex: 1; overflow-y: auto; padding: 0 8px 10px; }
+.merchant-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 10px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: var(--transition); margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.merchant-item:hover { background: var(--bg-card2); border-color: var(--border); }
+.merchant-item.active {
+  background: rgba(108,99,255,0.07);
+  border-color: rgba(108,99,255,0.20);
+}
+.merchant-avatar {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.merchant-info { flex: 1; min-width: 0; }
+.merchant-name {
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.merchant-loc {
+  font-size: 11px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
+}
+.merchant-meta { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.status-badge { font-size: 10px; padding: 2px 7px; border-radius: 5px; font-weight: 700; white-space: nowrap; }
+.status-badge.active  { background: rgba(22,163,74,0.12); color: var(--green); }
+.status-badge.trial   { background: rgba(217,119,6,0.12); color: var(--amber); }
+.status-badge.expired { background: rgba(220,38,38,0.12); color: var(--red); }
+.urgency-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 5px var(--red); }
+
+/* Sidebar health footer */
+.sidebar-health {
+  padding: 14px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px; font-size: 12px;
+  background: var(--bg-card2);
+}
+.health-text { color: var(--text-secondary); line-height: 1.4; }
+.health-text b { color: var(--text-primary); }
+
+/* ============================================================
+   MAIN PANEL TABS
+   ============================================================ */
+.tab-content { display: none; padding: 24px; min-height: 100%; }
+.tab-content.active { display: block; }
+.page-header { margin-bottom: 24px; }
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.page-sub { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+
+/* Stat cards */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px;
+  transition: var(--transition); position: relative; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--accent-grad);
+}
+.stat-card:hover { border-color: var(--border-hover); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(108,99,255,0.12); }
+.stat-card .stat-icon { font-size: 22px; margin-bottom: 10px; }
+.stat-card .stat-value {
+  font-size: 28px; font-weight: 700; letter-spacing: -1px;
+  background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stat-card .stat-label { color: var(--text-secondary); font-size: 12px; margin-top: 4px; font-weight: 500; }
+.stat-card .stat-delta { font-size: 11px; margin-top: 6px; color: var(--green); }
+.stat-card .stat-delta.neg { color: var(--red); }
+
+/* Heatmap */
+.heatmap-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.heatmap-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary); }
+.heatmap-grid { display: grid; gap: 8px; }
+.heatmap-row { display: grid; grid-template-columns: 180px repeat(5, 1fr); gap: 6px; align-items: center; }
+.heatmap-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heatmap-cell {
+  height: 28px; border-radius: 5px; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 600; cursor: default;
+  transition: var(--transition);
+}
+.heatmap-cell:hover { transform: scale(1.05); }
+.heatmap-cell.u1 { background: rgba(108,99,255,0.10); color: var(--accent-1); }
+.heatmap-cell.u2 { background: rgba(108,99,255,0.18); color: var(--accent-1); }
+.heatmap-cell.u3 { background: rgba(217,119,6,0.15); color: var(--amber); }
+.heatmap-cell.u4 { background: rgba(220,38,38,0.15); color: var(--red); }
+.heatmap-cell.u5 { background: rgba(220,38,38,0.28); color: var(--red); box-shadow: 0 0 8px rgba(220,38,38,0.2); }
+.heatmap-cell.empty { background: rgba(0,0,0,0.03); color: var(--text-muted); }
+.heatmap-header-row { display: grid; grid-template-columns: 180px repeat(5, 1fr); gap: 6px; margin-bottom: 4px; }
+.heatmap-header-cell { text-align: center; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Two-col dashboard layout */
+.dashboard-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.cat-breakdown {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.cat-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.cat-item:last-child { border-bottom: none; }
+.cat-emoji { font-size: 18px; width: 28px; text-align: center; }
+.cat-name { flex: 1; font-size: 13px; font-weight: 500; }
+.cat-bar-wrap { width: 80px; height: 5px; background: rgba(0,0,0,0.06); border-radius: 3px; overflow: hidden; }
+.cat-bar { height: 100%; border-radius: 3px; background: var(--accent-grad); }
+.cat-count { font-size: 12px; color: var(--text-secondary); width: 20px; text-align: right; }
+
+/* Trigger urgency list */
+.trigger-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.trg-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.trg-item:last-child { border-bottom: none; }
+.trg-urgency { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.trg-urgency.u1,.trg-urgency.u2 { background: rgba(108,99,255,0.12); color: var(--accent-1); }
+.trg-urgency.u3 { background: rgba(217,119,6,0.12); color: var(--amber); }
+.trg-urgency.u4,.trg-urgency.u5 { background: rgba(220,38,38,0.12); color: var(--red); }
+.trg-info { flex: 1; min-width: 0; }
+.trg-kind { font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trg-merchant { font-size: 11px; color: var(--text-muted); }
+
+/* ============================================================
+   MERCHANTS TAB
+   ============================================================ */
+.merchant-detail-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.merchant-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+.merchant-avatar-lg {
+  width: 56px; height: 56px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.merchant-header-info .merchant-title { font-size: 18px; font-weight: 700; }
+.merchant-header-info .merchant-subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 3px; }
+.merchant-header-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+.pill-blue { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+.pill-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.pill-amber { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.pill-red { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+.pill-purple { background: rgba(139,92,246,0.15); color: var(--accent-2); border: 1px solid rgba(139,92,246,0.2); }
+.pill-gray { background: rgba(255,255,255,0.07); color: var(--text-secondary); border: 1px solid var(--border); }
+
+.perf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.perf-item { background: var(--bg-card2); border-radius: var(--radius-sm); padding: 12px 14px; border: 1px solid var(--border); }
+.perf-val { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+.perf-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.perf-delta { font-size: 11px; margin-top: 4px; }
+.perf-delta.pos { color: var(--green); }
+.perf-delta.neg { color: var(--red); }
+
+/* CTR bar */
+.ctr-bar-section { margin-bottom: 16px; }
+.ctr-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--text-secondary); }
+.ctr-bar-track { height: 8px; background: rgba(0,0,0,0.06); border-radius: 4px; overflow: visible; position: relative; }
+.ctr-bar-fill { height: 100%; border-radius: 4px; background: var(--accent-grad); transition: width 0.8s ease; }
+.ctr-peer-line { position: absolute; top: -4px; width: 2px; height: 16px; background: var(--amber); border-radius: 1px; }
+.ctr-peer-label { position: absolute; top: -18px; font-size: 10px; color: var(--amber); transform: translateX(-50%); white-space: nowrap; }
+
+/* Signals */
+.signals-section { display: flex; flex-wrap: wrap; gap: 6px; }
+.signal-pill { font-size: 11px; padding: 3px 10px; border-radius: 6px; font-weight: 500; }
+.signal-pill.warn { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.signal-pill.good { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.signal-pill.danger { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+.signal-pill.info { background: rgba(99,102,241,0.1); color: var(--accent-1); border: 1px solid rgba(99,102,241,0.2); }
+
+/* ============================================================
+   COMPOSE TAB
+   ============================================================ */
+.compose-layout { display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
+.compose-form {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+}
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-select, .form-input {
+  width: 100%; background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  color: var(--text-primary); font-size: 13px; font-family: 'Inter', sans-serif;
+  transition: var(--transition); outline: none;
+  -webkit-appearance: none;
+}
+.form-select:focus, .form-input:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(108,99,255,0.12); }
+.form-select option { background: var(--bg-card); color: var(--text-primary); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; padding: 10px 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+  transition: var(--transition); font-family: 'Inter', sans-serif;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent-grad); color: white;
+  box-shadow: 0 4px 14px rgba(108,99,255,0.35);
+}
+.btn-primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,0.45); }
+.btn-secondary { background: var(--bg-card2); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:not(:disabled):hover { background: var(--bg-card3); border-color: var(--border-hover); }
+.btn-full { width: 100%; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* Compose button pulse */
+.btn-compose {
+  position: relative; overflow: hidden;
+  background: var(--accent-grad); color: white;
+  box-shadow: 0 4px 20px rgba(108,99,255,0.40);
+  width: 100%; padding: 14px; font-size: 14px; font-weight: 700;
+}
+.btn-compose:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.50); }
+.btn-compose.loading::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+.btn-compose .spinner {
+  width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
+}
+.btn-compose.loading .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* WhatsApp bubble panel */
+.bubble-panel {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; min-height: 300px;
+  box-shadow: var(--shadow);
+}
+.bubble-placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 260px; color: var(--text-muted); gap: 10px;
+}
+.bubble-placeholder .ph-icon { font-size: 40px; opacity: 0.5; }
+.bubble-placeholder p { font-size: 13px; }
+.wa-bubble-wrap { display: flex; flex-direction: column; gap: 0; }
+.wa-bubble {
+  background: #f0f4ff; border-radius: 12px 12px 12px 3px;
+  padding: 14px 16px; max-width: 100%; position: relative;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.12);
+  border: 1px solid rgba(108,99,255,0.12);
+}
+.wa-bubble-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  padding-bottom: 10px; border-bottom: 1px solid rgba(108,99,255,0.12);
+}
+.wa-sender-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-grad); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+}
+.wa-sender-name { font-size: 12px; font-weight: 600; color: var(--accent-1); }
+.wa-bubble-body { font-size: 14px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; }
+.wa-bubble-footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(108,99,255,0.08); }
+.wa-meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.wa-meta-badge { font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.wa-cta { background: rgba(108,99,255,0.10); color: var(--accent-1); border: 1px solid rgba(108,99,255,0.20); }
+.wa-send-as { background: rgba(22,163,74,0.08); color: var(--green); border: 1px solid rgba(22,163,74,0.15); }
+.wa-sup-key { background: rgba(168,85,247,0.08); color: var(--accent-2); border: 1px solid rgba(168,85,247,0.15); font-family: monospace; }
+
+.rationale-toggle { font-size: 11px; color: var(--text-muted); cursor: pointer; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+.rationale-toggle:hover { color: var(--text-secondary); }
+.rationale-body { margin-top: 8px; font-size: 12px; color: var(--text-secondary); background: var(--bg-card2); border-radius: 6px; padding: 10px; display: none; line-height: 1.6; border: 1px solid var(--border); }
+.rationale-body.open { display: block; }
+
+.bubble-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+/* ============================================================
+   CONVERSATIONS TAB
+   ============================================================ */
+.conv-layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; height: calc(100vh - 120px); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.conv-sidebar { border-right: 1px solid var(--border); overflow-y: auto; background: var(--bg-card); }
+.conv-sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+.conv-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: var(--transition); }
+.conv-item:hover { background: var(--bg-card2); }
+.conv-item.active { background: rgba(108,99,255,0.07); border-right: 2px solid var(--accent-1); }
+.conv-item-name { font-size: 13px; font-weight: 600; }
+.conv-item-preview { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-item-meta { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--text-muted); }
+
+.conv-main { display: flex; flex-direction: column; background: #f8f9fe; }
+.conv-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; background: var(--bg-card);
+}
+.conv-header-info { flex: 1; }
+.conv-header-name { font-size: 14px; font-weight: 600; }
+.conv-header-status { font-size: 11px; color: var(--text-muted); }
+.conv-turn-badge { font-size: 11px; padding: 3px 8px; border-radius: 5px; background: var(--bg-card2); color: var(--text-secondary); border: 1px solid var(--border); }
+.auto-reply-indicator {
+  font-size: 11px; padding: 3px 10px; border-radius: 5px;
+  background: rgba(217,119,6,0.08); color: var(--amber);
+  border: 1px solid rgba(217,119,6,0.18);
+  display: none;
+}
+.auto-reply-indicator.active { display: flex; align-items: center; gap: 5px; animation: flash-amber 1s ease 3; }
+@keyframes flash-amber { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-msg { display: flex; flex-direction: column; max-width: 75%; }
+.chat-msg.vera { align-self: flex-start; }
+.chat-msg.merchant { align-self: flex-end; }
+.chat-bubble {
+  padding: 11px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; word-break: break-word;
+}
+.chat-msg.vera .chat-bubble { background: #ffffff; border: 1px solid rgba(108,99,255,0.15); border-radius: 3px 12px 12px 12px; color: var(--text-primary); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.chat-msg.merchant .chat-bubble { background: rgba(108,99,255,0.12); border-radius: 12px 3px 12px 12px; color: var(--text-primary); }
+.chat-timestamp { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.chat-msg.merchant .chat-timestamp { text-align: right; }
+.chat-sender { font-size: 10px; font-weight: 600; margin-bottom: 3px; }
+.chat-msg.vera .chat-sender { color: var(--accent-1); }
+.chat-msg.merchant .chat-sender { color: var(--accent-2); text-align: right; }
+.conv-ended-divider { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 11px; margin: 8px 0; }
+.conv-ended-divider::before, .conv-ended-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.conv-input-area { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-card); }
+.presets-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.preset-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 100px;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+  font-family: 'Inter', sans-serif;
+}
+.preset-btn:hover { border-color: var(--accent-1); color: var(--accent-1); background: rgba(108,99,255,0.06); }
+.conv-input-row { display: flex; gap: 8px; }
+.conv-input {
+  flex: 1; background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary);
+  font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+  transition: var(--transition);
+}
+.conv-input:focus { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(108,99,255,0.10); }
+.conv-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); gap: 12px; }
+.conv-empty-icon { font-size: 40px; }
+.conv-empty-text { font-size: 13px; }
+
+/* ============================================================
+   JUDGE TAB — RUBRIC + SIMULATOR PANEL
+   ============================================================ */
+
+/* "Each scored out of 10" header line */
+.rubric-eyebrow {
+  font-size: 12px; color: var(--text-muted); font-weight: 500;
+  border-top: 1px solid var(--border); padding-top: 14px;
+  margin-bottom: 12px; letter-spacing: 0.3px;
+}
+
+/* 5-card rubric row */
+.rubric-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.rubric-card {
+  padding: 20px 18px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: background var(--transition);
+  cursor: default;
+}
+.rubric-card:last-child { border-right: none; }
+.rubric-card.highlight {
+  background: #1a3a2a;   /* dark green, matching screenshot's featured card */
+}
+.rubric-card:not(.highlight):hover { background: var(--bg-card2); }
+.rubric-score {
+  font-size: 22px; font-weight: 800;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  letter-spacing: -1px;
+}
+.rubric-card.highlight .rubric-score { color: #a8d5b5; }
+.rubric-title {
+  font-size: 14px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 8px; line-height: 1.3;
+}
+.rubric-card.highlight .rubric-title { color: #e8f5ee; }
+.rubric-desc {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+}
+.rubric-card.highlight .rubric-desc { color: #b8dcc5; }
+
+/* ── Judge simulator panel ── */
+.judge-sim-panel {
+  background: #f0f4ff;
+  border: 1px solid rgba(108,99,255,0.15);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  color: #1a1a3e;
+}
+.judge-sim-title {
+  font-size: 15px; font-weight: 700; color: #1a1a3e;
+  margin-bottom: 8px;
+}
+.judge-sim-desc {
+  font-size: 13px; color: #4a4a7a;
+  line-height: 1.6; margin-bottom: 12px;
+}
+.judge-sim-list {
+  padding-left: 18px; margin: 0;
+  font-size: 13px; color: #4a4a7a; line-height: 1.9;
+}
+.judge-sim-list li code {
+  font-family: 'Courier New', monospace; font-size: 11px;
+  background: rgba(108,99,255,0.10); border-radius: 3px;
+  padding: 1px 5px; color: #4040a0;
+}
+.judge-sim-right-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: #5a5a8a; margin-bottom: 10px;
+}
+.judge-cmd-block {
+  background: #1e1e3f;
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px; color: #a5b4fc;
+  letter-spacing: 0.3px;
+  margin-bottom: 12px;
+  user-select: all;
+  cursor: text;
+}
+.judge-sim-note {
+  font-size: 12px; color: #6a6a9a; line-height: 1.5;
+}
+
+.judge-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.judge-scenarios { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scenario-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  transition: var(--transition); position: relative; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.scenario-card.running { border-color: var(--amber); box-shadow: 0 0 20px rgba(217,119,6,0.12); }
+.scenario-card.passed { border-color: var(--green); box-shadow: 0 0 20px rgba(22,163,74,0.12); }
+.scenario-card.failed { border-color: var(--red); box-shadow: 0 0 20px rgba(220,38,38,0.10); }ow: 0 0 20px rgba(16,185,129,0.1); }
+.scenario-card.failed { border-color: var(--red); box-shadow: 0 0 20px rgba(220,38,38,0.10); }
+.scenario-icon { font-size: 30px; margin-bottom: 12px; }
+.scenario-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.scenario-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5; }
+.scenario-status { margin-bottom: 12px; min-height: 28px; }
+.scenario-result {
+  background: var(--bg-card2); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-size: 12px; display: none; margin-top: 10px; line-height: 1.6; border: 1px solid var(--border);
+}
+.scenario-result.show { display: block; }
+.scenario-result.pass { border-left: 3px solid var(--green); color: var(--text-secondary); }
+.scenario-result.fail { border-left: 3px solid var(--red); color: var(--text-secondary); }
+.progress-bar-wrap { height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 10px; display: none; }
+.progress-bar-wrap.show { display: block; }
+.progress-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 2px; transition: width 0.3s ease; }
+.judge-turn-log { font-size: 11px; color: var(--text-muted); margin-top: 8px; display: none; }
+.judge-turn-log.show { display: block; }
+.judge-turn { padding: 4px 0; border-bottom: 1px solid var(--border); }
+.judge-turn:last-child { border-bottom: none; }
+.judge-turn .from { font-weight: 600; }
+.judge-turn .from.vera { color: var(--accent-1); }
+.judge-turn .from.merchant { color: var(--accent-2); }
+.result-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 700; }
+.result-badge.pass { background: rgba(22,163,74,0.10); color: var(--green); }
+.result-badge.fail { background: rgba(220,38,38,0.10); color: var(--red); }
+.result-badge.running { background: rgba(217,119,6,0.10); color: var(--amber); }
+
+/* ============================================================
+   RIGHT PANEL — ACTIVITY LOG
+   ============================================================ */
+.right-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.right-header-title { font-size: 13px; font-weight: 600; }
+.right-header-sub { font-size: 11px; color: var(--text-muted); }
+#activity-log { flex: 1; overflow-y: auto; padding: 8px; background: var(--bg-card2); }
+.log-entry {
+  padding: 8px 10px; border-radius: 6px; margin-bottom: 4px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  animation: fadeInUp 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+@keyframes fadeInUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+.log-entry-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.log-ts { font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.log-endpoint { font-size: 11px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.log-method { font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+.log-method.GET { background: rgba(22,163,74,0.10); color: var(--green); }
+.log-method.POST { background: rgba(108,99,255,0.10); color: var(--accent-1); }
+.log-status { font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+.log-status.ok { background: rgba(22,163,74,0.10); color: var(--green); }
+.log-status.err { background: rgba(220,38,38,0.10); color: var(--red); }
+.log-latency { font-size: 10px; color: var(--text-muted); }
+
+/* Tooltip-style */
+.tooltip { position: relative; }
+.tooltip-text { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #ffffff; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; white-space: nowrap; z-index: 200; color: var(--text-primary); pointer-events: none; box-shadow: var(--shadow); }
+.tooltip:hover .tooltip-text { display: block; }
+
+/* Sparkline SVG */
+.sparkline-wrap { width: 80px; height: 30px; }
+
+/* Loading overlay */
+.loading-dots { display: flex; gap: 4px; align-items: center; justify-content: center; }
+.loading-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent-1);
+  animation: bounce-dot 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce-dot { 0%,80%,100%{transform:scale(.8);opacity:.5} 40%{transform:scale(1.2);opacity:1} }
+
+/* Divider */
+.section-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.empty-state .es-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+.empty-state p { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     STATUS BAR (top stripe)
+     ============================================================ -->
+<div id="status-bar">
+  <div class="status-item">
+    <div class="status-dot" id="health-dot"></div>
+    <span id="health-text" class="health-text">Connecting…</span>
+  </div>
+  <span class="status-sep">|</span>
+  <div class="status-item">
+    <span>Bot:</span>
+    <span class="status-label">http://localhost:8080</span>
+  </div>
+  <span class="status-sep">|</span>
+  <div class="status-item">
+    <span>Model:</span>
+    <span id="status-model">—</span>
+  </div>
+  <span class="status-sep">|</span>
+  <div class="status-item">
+    <span>Uptime:</span>
+    <span id="status-uptime" style="font-variant-numeric:tabular-nums;">—</span>
+  </div>
+  <span class="status-sep">|</span>
+  <div class="status-item" style="gap:8px;">
+    <span>Contexts:</span>
+    <span class="ctx-count" id="ctx-category">cat: 0</span>
+    <span class="ctx-count" id="ctx-merchant">mer: 0</span>
+    <span class="ctx-count" id="ctx-customer">cus: 0</span>
+    <span class="ctx-count" id="ctx-trigger">trg: 0</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="app">
+
+  <!-- LEFT SIDEBAR -->
+  <aside id="sidebar">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">V</div>
+        <div>
+          <div class="logo-text"><span>Vera</span> Dashboard</div>
+          <div class="logo-sub">magicpin AI Challenge</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav tabs -->
+    <nav class="sidebar-nav" id="main-nav">
+      <div class="nav-tab active" data-tab="dashboard">
+        <span class="tab-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-tab" data-tab="merchants">
+        <span class="tab-icon">🏪</span> Merchants
+        <span class="nav-badge" id="badge-merchants">10</span>
+      </div>
+      <div class="nav-tab" data-tab="compose">
+        <span class="tab-icon">✨</span> Compose
+      </div>
+      <div class="nav-tab" data-tab="conversations">
+        <span class="tab-icon">💬</span> Conversations
+        <span class="nav-badge" id="badge-conv" style="display:none">0</span>
+      </div>
+      <div class="nav-tab" data-tab="judge">
+        <span class="tab-icon">⚖️</span> Judge
+      </div>
+    </nav>
+
+    <!-- Merchant list -->
+    <div class="sidebar-section-header">Merchants</div>
+    <div id="merchant-list"></div>
+
+    <!-- System health -->
+    <div class="sidebar-health">
+      <div class="status-dot" id="sidebar-health-dot"></div>
+      <div class="health-text">
+        <b id="sidebar-status-text">Checking…</b>
+        <span id="sidebar-ctx-count" style="font-size:11px;color:var(--text-muted);display:block">Loading contexts…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER PANEL -->
+  <main id="main-panel">
+
+    <!-- ======================================
+         DASHBOARD TAB
+         ====================================== -->
+    <div class="tab-content active" id="tab-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Real-time overview of all merchants, triggers, and bot health</div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🏪</div>
+          <div class="stat-value" id="stat-merchants">0</div>
+          <div class="stat-label">Total Merchants</div>
+          <div class="stat-delta">↑ 5 categories</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-value" id="stat-triggers">0</div>
+          <div class="stat-label">Active Triggers</div>
+          <div class="stat-delta" id="stat-triggers-high">0 high urgency</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-value" id="stat-ctr">0%</div>
+          <div class="stat-label">Average CTR</div>
+          <div class="stat-delta" id="stat-ctr-delta">vs peer median</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-value" id="stat-active">0</div>
+          <div class="stat-label">Active Subscriptions</div>
+          <div class="stat-delta" id="stat-active-pct">0% active rate</div>
+        </div>
+      </div>
+
+      <!-- Trigger urgency heatmap -->
+      <div class="heatmap-card">
+        <div class="heatmap-title">⚡ Trigger Urgency Map — all merchants × urgency</div>
+        <div class="heatmap-header-row">
+          <div></div>
+          <div class="heatmap-header-cell">U1 Low</div>
+          <div class="heatmap-header-cell">U2 Info</div>
+          <div class="heatmap-header-cell">U3 Med</div>
+          <div class="heatmap-header-cell">U4 High</div>
+          <div class="heatmap-header-cell">U5 Crit</div>
+        </div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+
+      <!-- Two-col lower section -->
+      <div class="dashboard-row">
+        <!-- Categories breakdown -->
+        <div class="cat-breakdown">
+          <div class="section-title">📦 Category Breakdown</div>
+          <div id="category-breakdown"></div>
+        </div>
+
+        <!-- Top triggers by urgency -->
+        <div class="trigger-card">
+          <div class="section-title">🔥 Triggers by Urgency</div>
+          <div id="trigger-urgency-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================
+         MERCHANTS TAB
+         ====================================== -->
+    <div class="tab-content" id="tab-merchants">
+      <div class="page-header">
+        <div class="page-title">Merchants</div>
+        <div class="page-sub">Click a merchant in the sidebar to view details</div>
+      </div>
+      <div id="merchant-detail-area">
+        <div class="empty-state">
+          <div class="es-icon">🏪</div>
+          <p>Select a merchant from the sidebar to view their detailed profile</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================
+         COMPOSE TAB
+         ====================================== -->
+    <div class="tab-content" id="tab-compose">
+      <div class="page-header">
+        <div class="page-title">✨ Compose Message</div>
+        <div class="page-sub">Pick a merchant + trigger → fire the bot → see the crafted message</div>
+      </div>
+
+      <div class="compose-layout">
+        <!-- Form -->
+        <div class="compose-form">
+          <div class="form-group">
+            <label class="form-label">Select Merchant</label>
+            <select class="form-select" id="compose-merchant-select">
+              <option value="">Choose a merchant…</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Trigger</label>
+            <select class="form-select" id="compose-trigger-select" disabled>
+              <option value="">First select a merchant…</option>
+            </select>
+          </div>
+          <div class="section-divider"></div>
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom:8px">Step 1 — Load Contexts</label>
+            <button class="btn btn-secondary btn-full" id="btn-load-contexts" disabled>
+              📥 Load Contexts to Bot
+            </button>
+            <div id="ctx-load-status" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:16px"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom:8px">Step 2 — Compose</label>
+            <button class="btn btn-compose" id="btn-compose" disabled>
+              <div class="spinner"></div>
+              <span id="compose-btn-text">⚡ Compose Message</span>
+            </button>
+          </div>
+          <div id="compose-error" style="font-size:12px;color:var(--red);margin-top:8px;display:none"></div>
+        </div>
+
+        <!-- Message preview -->
+        <div>
+          <div class="bubble-panel" id="compose-bubble-panel">
+            <div class="bubble-placeholder" id="bubble-placeholder">
+              <div class="ph-icon">💬</div>
+              <p>Your composed message will appear here</p>
+              <p style="font-size:11px;opacity:.6">Load contexts then click Compose</p>
+            </div>
+            <div id="bubble-content" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================
+         CONVERSATIONS TAB
+         ====================================== -->
+    <div class="tab-content" id="tab-conversations">
+      <div class="page-header">
+        <div class="page-title">💬 Conversations</div>
+        <div class="page-sub">Multi-turn chat simulator — reply as the merchant, watch Vera respond</div>
+      </div>
+
+      <div class="conv-layout">
+        <!-- Conversation sidebar list -->
+        <div class="conv-sidebar">
+          <div class="conv-sidebar-header">Active Conversations</div>
+          <div id="conv-list"></div>
+          <div id="conv-list-empty" class="empty-state" style="padding:20px">
+            <div class="es-icon" style="font-size:24px">💬</div>
+            <p style="font-size:11px">Use Compose tab to start a conversation</p>
+          </div>
+        </div>
+
+        <!-- Chat area -->
+        <div class="conv-main">
+          <div class="conv-header" id="conv-header">
+            <div class="conv-header-info">
+              <div class="conv-header-name" id="conv-header-name">—</div>
+              <div class="conv-header-status" id="conv-header-status">No conversation selected</div>
+            </div>
+            <div class="auto-reply-indicator" id="auto-reply-indicator">⚠️ Auto-reply detected</div>
+            <div class="conv-turn-badge" id="conv-turn-badge">Turn 0</div>
+          </div>
+          <div class="chat-area" id="chat-area">
+            <div class="conv-empty">
+              <div class="conv-empty-icon">🤖</div>
+              <div class="conv-empty-text">Select a conversation to begin</div>
+            </div>
+          </div>
+          <div class="conv-input-area" id="conv-input-area">
+            <div class="presets-row">
+              <button class="preset-btn" data-preset="Yes, let's do it!">Yes, let's do it!</button>
+              <button class="preset-btn" data-preset="Not interested.">Not interested</button>
+              <button class="preset-btn" data-preset="Thank you for contacting us! Our team will get back to you soon.">Auto-reply</button>
+              <button class="preset-btn" data-preset="Ok let's do it">Ok proceed</button>
+              <button class="preset-btn" data-preset="Tell me more about this.">Tell me more</button>
+            </div>
+            <div class="conv-input-row">
+              <input class="conv-input" id="conv-message-input" placeholder="Reply as merchant… (or pick preset above)" />
+              <button class="btn btn-primary" id="btn-send-reply">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================
+         JUDGE TAB
+         ====================================== -->
+    <div class="tab-content" id="tab-judge">
+      <div class="page-header">
+        <div class="page-title">⚖️ Judge Scenarios</div>
+        <div class="page-sub">Run the 4 official test scenarios against the live bot endpoint</div>
+      </div>
+
+      <!-- ── SCORING RUBRIC ── -->
+      <div class="rubric-eyebrow">Each scored out of 10</div>
+      <div class="rubric-grid">
+        <div class="rubric-card highlight">
+          <div class="rubric-score">/10</div>
+          <div class="rubric-title">Decision quality</div>
+          <div class="rubric-desc">Can your bot pick the best signal for this moment? Great outputs combine trigger + merchant state + category fit before writing.</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-score">/10</div>
+          <div class="rubric-title">Specificity</div>
+          <div class="rubric-desc">Use real numbers, offers, dates, and local facts from the given input.</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-score">/10</div>
+          <div class="rubric-title">Category fit</div>
+          <div class="rubric-desc">Keep tone true to the business type: clinical, visual, timely, or utility-first.</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-score">/10</div>
+          <div class="rubric-title">Merchant fit</div>
+          <div class="rubric-desc">Personalize to merchant metrics, offer catalog, and prior conversation behavior.</div>
+        </div>
+        <div class="rubric-card">
+          <div class="rubric-score">/10</div>
+          <div class="rubric-title">Engagement compulsion</div>
+          <div class="rubric-desc">Give one strong reason to reply now with a low-effort next action.</div>
+        </div>
+      </div>
+
+      <!-- ── JUDGE SIMULATOR PANEL ── -->
+      <div class="judge-sim-panel">
+        <div>
+          <div class="judge-sim-title">Judge simulator (official local harness)</div>
+          <div class="judge-sim-desc">This package includes the LLM-powered judge as <code style="font-family:'Courier New',monospace;font-size:11px;background:rgba(0,0,0,0.08);border-radius:3px;padding:1px 5px">judge_simulator.py</code>.</div>
+          <ul class="judge-sim-list">
+            <li>Validates endpoint behavior: <code>/healthz</code>, <code>/metadata</code>, <code>/context</code>, <code>/tick</code>, <code>/reply</code></li>
+            <li>Before running, open <code>judge_simulator.py</code> and set <code>LLM_PROVIDER</code>, <code>LLM_API_KEY</code>, and <code>BOT_URL</code></li>
+            <li>Runs one deterministic judge pass for your submitted bot URL</li>
+            <li>Scores quality across all five rubric dimensions</li>
+            <li>Prints the complete output in a single run</li>
+          </ul>
+        </div>
+        <div>
+          <div class="judge-sim-right-label">Run Judge Simulator (after setting LLM API Key)</div>
+          <div class="judge-cmd-block">python judge_simulator.py</div>
+          <div class="judge-sim-note">Your output should stay deterministic for the same input and simulator settings.</div>
+        </div>
+      </div>
+
+      <!-- ── INTERACTIVE SCENARIOS ── -->
+      <div class="judge-header">
+        <div style="font-size:13px;color:var(--text-secondary)">Test bot behavior against adversarial scenarios — warmup, auto-reply, intent, hostile</div>
+        <button class="btn btn-primary" id="btn-run-all">▶ Run All Scenarios</button>
+      </div>
+
+      <div class="judge-scenarios" id="judge-scenarios-grid"></div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT PANEL — Live Activity Log -->
+  <aside id="right-panel">
+    <div class="right-header">
+      <div>
+        <div class="right-header-title">⚡ Live Activity</div>
+        <div class="right-header-sub">API calls — max 20 entries</div>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="clearLog()">Clear</button>
+    </div>
+    <div id="activity-log">
+      <div class="empty-state" id="log-empty">
+        <div class="es-icon" style="font-size:24px">📡</div>
+        <p style="font-size:11px">API calls will appear here</p>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const API_BASE = 'http://localhost:8080';
+const CATEGORY_ICONS = { dentists:'🦷', salons:'💇', restaurants:'🍕', gyms:'🏋️', pharmacies:'💊' };
+const CATEGORY_COLORS = { dentists:'#3b82f6', salons:'#ec4899', restaurants:'#f59e0b', gyms:'#10b981', pharmacies:'#6366f1' };
+
+/* ============================================================
+   INLINE SEED DATA
+   ============================================================ */
+const MERCHANTS = [
+  {"merchant_id":"m_001_drmeera_dentist_delhi","category_slug":"dentists","identity":{"name":"Dr. Meera's Dental Clinic","city":"Delhi","locality":"Lajpat Nagar","verified":true,"languages":["en","hi"],"owner_first_name":"Meera"},"subscription":{"status":"active","plan":"Pro","days_remaining":82},"performance":{"views":2410,"calls":18,"ctr":0.021,"delta_7d":{"views_pct":0.18,"calls_pct":-0.05}},"signals":["stale_posts:22d","ctr_below_peer_median","high_risk_adult_cohort"],"offers":[{"title":"Dental Cleaning @ ₹299","status":"active"}]},
+  {"merchant_id":"m_002_bharat_dentist_mumbai","category_slug":"dentists","identity":{"name":"Bharat Dental Care","city":"Mumbai","locality":"Andheri West","verified":false,"languages":["en","hi","mr"],"owner_first_name":"Bharat"},"subscription":{"status":"active","plan":"Pro","days_remaining":12},"performance":{"views":980,"calls":4,"ctr":0.018,"delta_7d":{"views_pct":-0.22,"calls_pct":-0.50}},"signals":["renewal_due_soon:12d","perf_dip_severe","unverified_gbp"],"offers":[]},
+  {"merchant_id":"m_003_studio11_salon_hyderabad","category_slug":"salons","identity":{"name":"Studio11 Family Salon","city":"Hyderabad","locality":"Kapra","verified":true,"languages":["en","hi","te"],"owner_first_name":"Lakshmi"},"subscription":{"status":"active","plan":"Pro","days_remaining":145},"performance":{"views":4980,"calls":62,"ctr":0.048,"delta_7d":{"views_pct":0.14,"calls_pct":0.20}},"signals":["high_engagement","above_peer_median_calls"],"offers":[{"title":"Haircut @ ₹99","status":"active"}]},
+  {"merchant_id":"m_004_glamour_salon_pune","category_slug":"salons","identity":{"name":"Glamour Lounge Spa & Salon","city":"Pune","locality":"Aundh","verified":true,"languages":["en","hi","mr"],"owner_first_name":"Anjali"},"subscription":{"status":"expired","plan":"Pro","days_since_expiry":38},"performance":{"views":1200,"calls":8,"ctr":0.022,"delta_7d":{"views_pct":-0.12,"calls_pct":-0.30}},"signals":["winback_eligible","dormant_with_vera_38d"],"offers":[]},
+  {"merchant_id":"m_005_pizzajunction_restaurant_delhi","category_slug":"restaurants","identity":{"name":"SK Pizza Junction","city":"Delhi","locality":"Sant Nagar","verified":false,"languages":["en","hi"],"owner_first_name":"Suresh"},"subscription":{"status":"trial","plan":"Trial","days_remaining":7},"performance":{"views":2200,"calls":12,"ctr":0.020,"delta_7d":{"views_pct":0.08,"calls_pct":0.10}},"signals":["trial_ending_soon","ipl_eligible_locality"],"offers":[{"title":"Buy 1 Pizza Get 1 Free (Tue-Thu)","status":"active"}]},
+  {"merchant_id":"m_006_southindiancafe_restaurant_bangalore","category_slug":"restaurants","identity":{"name":"Mylari South Indian Cafe","city":"Bangalore","locality":"Indiranagar","verified":true,"languages":["en","hi","kn"],"owner_first_name":"Suresh"},"subscription":{"status":"active","plan":"Pro","days_remaining":240},"performance":{"views":12400,"calls":88,"ctr":0.032,"delta_7d":{"views_pct":0.05,"calls_pct":0.02}},"signals":["high_volume","stable_growth"],"offers":[{"title":"Weekday Lunch Thali @ ₹149","status":"active"}]},
+  {"merchant_id":"m_007_powerhouse_gym_bangalore","category_slug":"gyms","identity":{"name":"PowerHouse Fitness","city":"Bangalore","locality":"HSR Layout","verified":true,"languages":["en","hi","kn"],"owner_first_name":"Karthik"},"subscription":{"status":"active","plan":"Pro","days_remaining":95},"performance":{"views":1480,"calls":22,"ctr":0.052,"delta_7d":{"views_pct":-0.30,"calls_pct":-0.35}},"signals":["seasonal_dip_apr_may","above_peer_ctr"],"offers":[{"title":"3 FREE Trial Classes","status":"active"}]},
+  {"merchant_id":"m_008_zenyoga_gym_chennai","category_slug":"gyms","identity":{"name":"Zen Yoga Studio","city":"Chennai","locality":"Mylapore","verified":true,"languages":["en","ta","hi"],"owner_first_name":"Padma"},"subscription":{"status":"active","plan":"Pro","days_remaining":180},"performance":{"views":880,"calls":18,"ctr":0.062,"delta_7d":{"views_pct":0.10,"calls_pct":0.15}},"signals":["high_retention","active_planning"],"offers":[{"title":"First Month @ ₹499","status":"active"}]},
+  {"merchant_id":"m_009_apollo_pharmacy_jaipur","category_slug":"pharmacies","identity":{"name":"Apollo Health Plus Pharmacy","city":"Jaipur","locality":"Malviya Nagar","verified":true,"languages":["en","hi"],"owner_first_name":"Ramesh"},"subscription":{"status":"active","plan":"Pro","days_remaining":60},"performance":{"views":1850,"calls":38,"ctr":0.045,"delta_7d":{"views_pct":0.06,"calls_pct":0.08}},"signals":["above_peer_calls","high_repeat_rate"],"offers":[{"title":"Free Home Delivery > ₹499","status":"active"}]},
+  {"merchant_id":"m_010_sunrisepharm_pharmacy_lucknow","category_slug":"pharmacies","identity":{"name":"Sunrise Medicos","city":"Lucknow","locality":"Gomti Nagar","verified":false,"languages":["en","hi"],"owner_first_name":"Vikas"},"subscription":{"status":"active","plan":"Basic","days_remaining":200},"performance":{"views":720,"calls":14,"ctr":0.041,"delta_7d":{"views_pct":0.02,"calls_pct":0.05}},"signals":["unverified_gbp","no_active_offers"],"offers":[]}
+];
+
+const TRIGGERS = [
+  {"id":"trg_001_research_digest_dentists","kind":"research_digest","merchant_id":"m_001_drmeera_dentist_delhi","urgency":2,"suppression_key":"research:dentists:2026-W17","payload":{"category":"dentists","top_item_id":"d_2026W17_jida_fluoride"}},
+  {"id":"trg_002_compliance_dci_radiograph","kind":"regulation_change","merchant_id":"m_001_drmeera_dentist_delhi","urgency":4,"suppression_key":"compliance:dci-radiograph:2026","payload":{"category":"dentists"}},
+  {"id":"trg_003_recall_due_priya","kind":"recall_due","merchant_id":"m_001_drmeera_dentist_delhi","customer_id":"c_001_priya_for_m001","urgency":3,"suppression_key":"recall:c_001_priya:2026-W17","payload":{}},
+  {"id":"trg_004_perf_dip_bharat","kind":"perf_dip","merchant_id":"m_002_bharat_dentist_mumbai","urgency":4,"suppression_key":"perf_dip:m_002:2026-W17","payload":{"views_pct":-0.22,"calls_pct":-0.50}},
+  {"id":"trg_005_renewal_due_bharat","kind":"renewal_due","merchant_id":"m_002_bharat_dentist_mumbai","urgency":4,"suppression_key":"renewal:m_002:2026-W17","payload":{"days_remaining":12}},
+  {"id":"trg_006_festival_diwali","kind":"festival_upcoming","merchant_id":"m_003_studio11_salon_hyderabad","urgency":1,"suppression_key":"festival:diwali:2026","payload":{"festival":"Diwali","days_until":4}},
+  {"id":"trg_007_bridal_followup_kavya","kind":"wedding_package_followup","merchant_id":"m_003_studio11_salon_hyderabad","urgency":2,"suppression_key":"bridal:m_003:kavya:2026","payload":{"customer_name":"Kavya"}},
+  {"id":"trg_008_curious_ask_studio11","kind":"curious_ask_due","merchant_id":"m_003_studio11_salon_hyderabad","urgency":1,"suppression_key":"curious:m_003:2026-W17","payload":{}},
+  {"id":"trg_009_winback_glamour","kind":"winback_eligible","merchant_id":"m_004_glamour_salon_pune","urgency":2,"suppression_key":"winback:m_004:2026-W17","payload":{"days_dormant":38}},
+  {"id":"trg_010_ipl_match_delhi","kind":"ipl_match_today","merchant_id":"m_005_pizzajunction_restaurant_delhi","urgency":3,"suppression_key":"ipl:delhi:2026-05-15","payload":{"teams":"Delhi vs Mumbai","venue":"Delhi"}},
+  {"id":"trg_012_milestone_mylari","kind":"milestone_reached","merchant_id":"m_006_southindiancafe_restaurant_bangalore","urgency":1,"suppression_key":"milestone:m_006:100reviews","payload":{"milestone":"100_reviews"}},
+  {"id":"trg_013_corporate_thali_planning","kind":"active_planning_intent","merchant_id":"m_006_southindiancafe_restaurant_bangalore","urgency":4,"suppression_key":"planning:m_006:corporate_thali","payload":{"intent":"corporate_lunch_order"}},
+  {"id":"trg_014_seasonal_dip_powerhouse","kind":"seasonal_perf_dip","merchant_id":"m_007_powerhouse_gym_bangalore","urgency":1,"suppression_key":"seasonal:m_007:apr_may","payload":{"season":"apr_may","views_pct":-0.30}},
+  {"id":"trg_016_kids_yoga_planning","kind":"active_planning_intent","merchant_id":"m_008_zenyoga_gym_chennai","urgency":4,"suppression_key":"planning:m_008:kids_yoga","payload":{"intent":"kids_yoga_batch"}},
+  {"id":"trg_018_supply_alert_apollo","kind":"supply_alert","merchant_id":"m_009_apollo_pharmacy_jaipur","urgency":5,"suppression_key":"supply:m_009:insulin:2026-W17","payload":{"item":"insulin_pens","shortage":"moderate"}},
+  {"id":"trg_021_unverified_gbp_sunrise","kind":"gbp_unverified","merchant_id":"m_010_sunrisepharm_pharmacy_lucknow","urgency":3,"suppression_key":"gbp:m_010:unverified","payload":{}},
+  {"id":"trg_022_cde_webinar_dentists","kind":"cde_opportunity","merchant_id":"m_001_drmeera_dentist_delhi","urgency":1,"suppression_key":"cde:ida_delhi:digital_impressions","payload":{"event":"IDA Delhi Digital Impressions Webinar","date":"2026-05-02"}},
+  {"id":"trg_023_competitor_opened","kind":"competitor_opened","merchant_id":"m_001_drmeera_dentist_delhi","urgency":2,"suppression_key":"competitor:m_001:2026-W17","payload":{"distance_km":1.3}},
+  {"id":"trg_024_perf_spike_zen","kind":"perf_spike","merchant_id":"m_008_zenyoga_gym_chennai","urgency":1,"suppression_key":"perf_spike:m_008:2026-W17","payload":{"views_pct":0.10}}
+];
+
+const CATEGORY_CONTEXTS = {
+  dentists: {slug:"dentists",display_name:"Dentists",voice:{tone:"peer_clinical",code_mix:"hindi_english_natural",vocab_allowed:["fluoride varnish","scaling","caries","bruxism","RCT","aligner"],vocab_taboo:["guaranteed","100% safe","miracle"]},offer_catalog:[{title:"Dental Cleaning @ ₹299",value:"299",audience:"new_user"},{title:"Teeth Whitening @ ₹1,499",value:"1499",audience:"new_user"},{title:"Free Consultation",value:"0",audience:"new_user"}],peer_stats:{avg_rating:4.4,avg_reviews:62,avg_ctr:0.030,avg_views_30d:1820},digest:[{id:"d_2026W17_jida_fluoride",kind:"research",title:"3-month fluoride varnish recall outperforms 6-month for high-risk adult caries",source:"JIDA Oct 2026, p.14",trial_n:2100,summary:"38% lower caries recurrence with 3-month recall"}],seasonal_beats:[{month_range:"Nov-Feb",note:"exam-stress bruxism spike"},{month_range:"Oct-Dec",note:"wedding whitening peak"}],trend_signals:[{query:"clear aligners delhi",delta_yoy:0.62}]},
+  salons: {slug:"salons",display_name:"Salons",voice:{tone:"warm_friendly",code_mix:"hindi_english_natural",vocab_allowed:["balayage","keratin","bridal package","nail art"],vocab_taboo:["guaranteed results","permanent"]},offer_catalog:[{title:"Haircut @ ₹99",value:"99",audience:"new_user"},{title:"Bridal Package @ ₹4,999",value:"4999",audience:"repeat_user"},{title:"Keratin Treatment @ ₹1,499",value:"1499",audience:"new_user"}],peer_stats:{avg_rating:4.3,avg_reviews:88,avg_ctr:0.038,avg_views_30d:3200},digest:[{id:"d_salons_001",kind:"trend",title:"Balayage bookings +44% YoY in metros",source:"Practo + Nykaa Trends Apr 2026",summary:"Demand for balayage and highlights rising sharply"}],seasonal_beats:[{month_range:"Oct-Dec",note:"wedding season peak — bridal packages 3x normal demand"},{month_range:"Jan-Feb",note:"Valentine bookings spike"}],trend_signals:[{query:"bridal makeup salon near me",delta_yoy:0.44}]},
+  restaurants: {slug:"restaurants",display_name:"Restaurants",voice:{tone:"casual_friendly",code_mix:"hindi_english_natural",vocab_allowed:["thali","biryani","combo","party order"],vocab_taboo:["best in city","guaranteed taste"]},offer_catalog:[{title:"Lunch Thali @ ₹149",value:"149",audience:"new_user"},{title:"Buy 1 Get 1 Pizza",value:"0",audience:"new_user"},{title:"Party Package @ ₹299/head",value:"299",audience:"repeat_user"}],peer_stats:{avg_rating:4.1,avg_reviews:142,avg_ctr:0.028,avg_views_30d:4800},digest:[{id:"d_restaurants_001",kind:"trend",title:"IPL match-day orders +62% vs non-match days",source:"Swiggy + Zomato trend report Apr 2026",summary:"Match-evening delivery orders spike massively"}],seasonal_beats:[{month_range:"Apr-Jun",note:"IPL season — match-day ordering spikes"}],trend_signals:[{query:"food delivery near stadium",delta_yoy:0.62}]},
+  gyms: {slug:"gyms",display_name:"Gyms",voice:{tone:"motivational_peer",code_mix:"hindi_english_natural",vocab_allowed:["HIIT","CrossFit","Zumba","functional training","body composition"],vocab_taboo:["guaranteed weight loss","miracle results"]},offer_catalog:[{title:"3 FREE Trial Classes",value:"0",audience:"new_user"},{title:"1 Month @ ₹999",value:"999",audience:"new_user"},{title:"Annual Plan @ ₹8,999",value:"8999",audience:"repeat_user"}],peer_stats:{avg_rating:4.2,avg_reviews:54,avg_ctr:0.040,avg_views_30d:1600},digest:[{id:"d_gyms_001",kind:"research",title:"Group fitness classes retain members 2.3x longer than solo training",source:"IHRSA Global Report 2026",summary:"Social fitness drives retention significantly"}],seasonal_beats:[{month_range:"Jan",note:"New Year resolution surge — membership spikes +80%"},{month_range:"Apr-May",note:"Pre-summer body prep surge"}],trend_signals:[{query:"yoga class near me",delta_yoy:0.38}]},
+  pharmacies: {slug:"pharmacies",display_name:"Pharmacies",voice:{tone:"helpful_clinical",code_mix:"hindi_english_natural",vocab_allowed:["prescription","OTC","generic","refill","health check"],vocab_taboo:["cures","guaranteed","miracle supplement"]},offer_catalog:[{title:"Free Home Delivery > ₹499",value:"0",audience:"new_user"},{title:"10% off on Generics",value:"10%",audience:"new_user"},{title:"Free BP/Sugar Check",value:"0",audience:"all"}],peer_stats:{avg_rating:4.3,avg_reviews:48,avg_ctr:0.035,avg_views_30d:1400},digest:[{id:"d_pharmacies_001",kind:"compliance",title:"CDSCO revised cold-chain guidelines for insulin storage effective June 2026",source:"CDSCO circular 2026-04-20",summary:"Insulin pens require 2-8°C storage throughout supply chain"}],seasonal_beats:[{month_range:"Jun-Sep",note:"Monsoon illness spike — ORS, antifungals demand rises"},{month_range:"Nov-Feb",note:"Winter meds — cough/cold/fever OTC spikes"}],trend_signals:[{query:"online pharmacy delivery",delta_yoy:0.52}]}
+};
+
+const CUSTOMER_CONTEXTS = {
+  "c_001_priya_for_m001": {customer_id:"c_001_priya_for_m001",merchant_id:"m_001_drmeera_dentist_delhi",identity:{name:"Priya",language_pref:"hi-en mix",age_band:"25-35"},relationship:{first_visit:"2025-11-04",last_visit:"2026-05-12",visits_total:4,services_received:["cleaning","cleaning","whitening","cleaning"]},state:"lapsed_soft",preferences:{preferred_slots:"weekday_evening",channel:"whatsapp"},consent:{opted_in_at:"2025-11-04",scope:["recall_reminders","appointment_reminders"]}}
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  health: 'unknown',      // 'ok' | 'error' | 'unknown'
+  metadata: {},
+  uptimeSeconds: 0,
+  contextsLoaded: { category: 0, merchant: 0, customer: 0, trigger: 0 },
+  activeTab: 'dashboard',
+  selectedMerchant: null,
+  // Compose
+  composeMerchantId: null,
+  composeTrigger: null,
+  composeResult: null,
+  composeConvId: null,
+  // Conversations
+  conversations: [],  // [{conv_id, merchant_id, merchant_name, trigger_kind, turns:[], ended}]
+  activeConvId: null,
+};
+
+/* ============================================================
+   API HELPER — central fetch wrapper with activity logging
+   ============================================================ */
+async function api(method, path, body = null) {
+  const url = API_BASE + path;
+  const start = Date.now();
+  let statusCode = null;
+  let ok = false;
+  let data = null;
+
+  try {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+    };
+    if (body) opts.body = JSON.stringify(body);
+
+    const resp = await fetch(url, opts);
+    statusCode = resp.status;
+    ok = resp.ok;
+    data = await resp.json();
+  } catch (err) {
+    statusCode = 0;
+    ok = false;
+    data = { error: err.message };
+  }
+
+  const latency = Date.now() - start;
+  logActivity(method, path, statusCode, latency, ok);
+  return { ok, status: statusCode, data };
+}
+
+/* ============================================================
+   ACTIVITY LOG (right panel)
+   ============================================================ */
+const MAX_LOG = 20;
+let logEntries = [];
+
+function logActivity(method, path, status, latency, ok) {
+  const ts = new Date().toLocaleTimeString('en-IN', { hour12: false });
+  logEntries.unshift({ method, path, status, latency, ok, ts });
+  if (logEntries.length > MAX_LOG) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('activity-log');
+  const empty = document.getElementById('log-empty');
+  if (logEntries.length === 0) {
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  el.innerHTML = logEntries.map(e => `
+    <div class="log-entry">
+      <div class="log-entry-top">
+        <span class="log-method ${e.method}">${e.method}</span>
+        <span class="log-endpoint">${e.path}</span>
+        <span class="log-status ${e.ok ? 'ok' : 'err'}">${e.status || 'ERR'}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="log-ts">${e.ts}</span>
+        <span class="log-latency">${e.latency}ms</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearLog() {
+  logEntries = [];
+  renderLog();
+  document.getElementById('log-empty').style.display = '';
+}
+
+/* ============================================================
+   HEALTHZ POLLING (every 10s)
+   ============================================================ */
+let uptimeTimer = null;
+let lastUptimeBase = 0;
+let lastUptimeAt = 0;
+
+async function checkHealth() {
+  const r = await api('GET', '/v1/healthz');
+  const dot = document.getElementById('health-dot');
+  const text = document.getElementById('health-text');
+  const sidebarDot = document.getElementById('sidebar-health-dot');
+  const sidebarText = document.getElementById('sidebar-status-text');
+  const sidebarCtx = document.getElementById('sidebar-ctx-count');
+
+  if (r.ok && r.data.status === 'ok') {
+    state.health = 'ok';
+    state.uptimeSeconds = r.data.uptime_seconds || 0;
+    state.contextsLoaded = r.data.contexts_loaded || {};
+    dot.className = 'status-dot online';
+    sidebarDot.className = 'status-dot online';
+    text.textContent = '● Online';
+    text.style.color = 'var(--green)';
+    sidebarText.textContent = 'Bot Online';
+    // Update ctx counts
+    const cl = r.data.contexts_loaded || {};
+    document.getElementById('ctx-category').textContent = `cat: ${cl.category||0}`;
+    document.getElementById('ctx-merchant').textContent = `mer: ${cl.merchant||0}`;
+    document.getElementById('ctx-customer').textContent = `cus: ${cl.customer||0}`;
+    document.getElementById('ctx-trigger').textContent = `trg: ${cl.trigger||0}`;
+    sidebarCtx.textContent = `${(cl.category||0)+(cl.merchant||0)+(cl.customer||0)+(cl.trigger||0)} contexts loaded`;
+    // Start uptime counter
+    lastUptimeBase = r.data.uptime_seconds || 0;
+    lastUptimeAt = Date.now();
+    updateUptimeDisplay();
+  } else {
+    state.health = 'error';
+    dot.className = 'status-dot offline';
+    sidebarDot.className = 'status-dot offline';
+    text.textContent = '● Offline';
+    text.style.color = 'var(--red)';
+    sidebarText.textContent = 'Bot Offline';
+    sidebarCtx.textContent = 'Cannot reach localhost:8080';
+    document.getElementById('status-uptime').textContent = '—';
+  }
+}
+
+function updateUptimeDisplay() {
+  const elapsed = Math.floor((Date.now() - lastUptimeAt) / 1000);
+  const total = lastUptimeBase + elapsed;
+  const h = Math.floor(total / 3600).toString().padStart(2, '0');
+  const m = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+  const s = (total % 60).toString().padStart(2, '0');
+  document.getElementById('status-uptime').textContent = `${h}:${m}:${s}`;
+}
+
+async function fetchMetadata() {
+  const r = await api('GET', '/v1/metadata');
+  if (r.ok) {
+    state.metadata = r.data;
+    document.getElementById('status-model').textContent = r.data.model || '—';
+  }
+}
+
+/* ============================================================
+   SEED BOT WITH ALL CONTEXTS
+   ============================================================ */
+async function seedContexts() {
+  // Push all 5 category contexts
+  for (const [slug, payload] of Object.entries(CATEGORY_CONTEXTS)) {
+    await api('POST', '/v1/context', {
+      scope: 'category', context_id: slug, version: 1,
+      payload, delivered_at: new Date().toISOString()
+    });
+  }
+  // Push all 10 merchant contexts
+  for (const m of MERCHANTS) {
+    await api('POST', '/v1/context', {
+      scope: 'merchant', context_id: m.merchant_id, version: 1,
+      payload: m, delivered_at: new Date().toISOString()
+    });
+  }
+  // Push known customers
+  for (const [cid, payload] of Object.entries(CUSTOMER_CONTEXTS)) {
+    await api('POST', '/v1/context', {
+      scope: 'customer', context_id: cid, version: 1,
+      payload, delivered_at: new Date().toISOString()
+    });
+  }
+  // Push all triggers
+  for (const t of TRIGGERS) {
+    await api('POST', '/v1/context', {
+      scope: 'trigger', context_id: t.id, version: 1,
+      payload: t, delivered_at: new Date().toISOString()
+    });
+  }
+  // Refresh health
+  await checkHealth();
+}
+
+/* ============================================================
+   TAB NAVIGATION
+   ============================================================ */
+function switchTab(tabId) {
+  state.activeTab = tabId;
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + tabId);
+  });
+}
+
+document.getElementById('main-nav').addEventListener('click', e => {
+  const tab = e.target.closest('.nav-tab');
+  if (tab) switchTab(tab.dataset.tab);
+});
+
+/* ============================================================
+   SIDEBAR MERCHANT LIST RENDERING
+   ============================================================ */
+function getMerchantUrgency(merchantId) {
+  // Returns highest urgency trigger for a merchant
+  const trgs = TRIGGERS.filter(t => t.merchant_id === merchantId);
+  if (!trgs.length) return 0;
+  return Math.max(...trgs.map(t => t.urgency));
+}
+
+function renderMerchantList() {
+  const container = document.getElementById('merchant-list');
+  container.innerHTML = MERCHANTS.map(m => {
+    const icon = CATEGORY_ICONS[m.category_slug] || '🏪';
+    const color = CATEGORY_COLORS[m.category_slug] || '#6366f1';
+    const sub = m.subscription;
+    const urgency = getMerchantUrgency(m.merchant_id);
+    const hasUrgent = urgency >= 4;
+    const isActive = state.selectedMerchant === m.merchant_id;
+    return `
+      <div class="merchant-item ${isActive ? 'active' : ''}" data-merchant-id="${m.merchant_id}" onclick="selectMerchant('${m.merchant_id}')">
+        <div class="merchant-avatar" style="background:${color}22;border:1px solid ${color}44">
+          <span>${icon}</span>
+        </div>
+        <div class="merchant-info">
+          <div class="merchant-name">${m.identity.name}</div>
+          <div class="merchant-loc">${m.identity.locality}, ${m.identity.city}</div>
+        </div>
+        <div class="merchant-meta">
+          <span class="status-badge ${sub.status}">${sub.status}</span>
+          ${hasUrgent ? '<span class="urgency-dot" title="High urgency trigger"></span>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectMerchant(merchantId) {
+  state.selectedMerchant = merchantId;
+  renderMerchantList();
+  renderMerchantDetail(merchantId);
+  // Pre-populate compose tab merchant
+  document.getElementById('compose-merchant-select').value = merchantId;
+  onComposeMerchantChange();
+  if (state.activeTab !== 'merchants') {
+    switchTab('merchants');
+  }
+}
+
+/* ============================================================
+   MERCHANT DETAIL VIEW
+   ============================================================ */
+function signalClass(sig) {
+  const s = sig.toLowerCase();
+  if (s.includes('high_') || s.includes('above_') || s.includes('stable') || s.includes('retention')) return 'good';
+  if (s.includes('dip') || s.includes('severe') || s.includes('expired') || s.includes('dormant')) return 'danger';
+  if (s.includes('unverified') || s.includes('renewal') || s.includes('stale') || s.includes('trial') || s.includes('winback')) return 'warn';
+  return 'info';
+}
+
+function renderSparkline(views, calls) {
+  // Simple SVG mini bar chart using the delta as a proxy
+  const vals = [70, 80, 72, views > 2000 ? 90 : 60, 75];
+  const max = Math.max(...vals);
+  const bars = vals.map((v, i) => {
+    const h = Math.round((v / max) * 22);
+    const y = 24 - h;
+    return `<rect x="${i * 16 + 2}" y="${y}" width="12" height="${h}" rx="2" fill="url(#sg)"/>`;
+  }).join('');
+  return `
+    <svg class="sparkline-wrap" viewBox="0 0 82 26" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#ec4899"/>
+        </linearGradient>
+      </defs>
+      ${bars}
+    </svg>`;
+}
+
+function renderMerchantDetail(merchantId) {
+  const m = MERCHANTS.find(x => x.merchant_id === merchantId);
+  if (!m) return;
+
+  const icon = CATEGORY_ICONS[m.category_slug] || '🏪';
+  const color = CATEGORY_COLORS[m.category_slug] || '#6366f1';
+  const p = m.performance;
+  const sub = m.subscription;
+  const peerCtr = 0.035; // avg across categories
+  const ctrPct = Math.min((p.ctr / 0.08) * 100, 100);
+  const peerPct = Math.min((peerCtr / 0.08) * 100, 100);
+  const merchantTriggers = TRIGGERS.filter(t => t.merchant_id === merchantId);
+
+  const subDaysLabel = sub.status === 'expired'
+    ? `Expired ${m.subscription.days_since_expiry || '?'}d ago`
+    : `${sub.days_remaining}d remaining`;
+
+  const area = document.getElementById('merchant-detail-area');
+  area.innerHTML = `
+    <div class="merchant-detail-card">
+      <div class="merchant-header">
+        <div class="merchant-avatar-lg" style="background:${color}22;border:2px solid ${color}44">${icon}</div>
+        <div class="merchant-header-info">
+          <div class="merchant-title">${m.identity.name}</div>
+          <div class="merchant-subtitle">
+            ${m.identity.locality}, ${m.identity.city}
+            ${m.identity.verified ? ' · <span style="color:var(--green)">✓ Verified</span>' : ' · <span style="color:var(--amber)">⚠ Unverified</span>'}
+          </div>
+          <div class="merchant-header-badges">
+            <span class="pill ${sub.status === 'active' ? 'pill-green' : sub.status === 'trial' ? 'pill-amber' : 'pill-red'}">${sub.plan} · ${sub.status}</span>
+            <span class="pill pill-gray">${subDaysLabel}</span>
+            <span class="pill pill-blue">${icon} ${m.category_slug}</span>
+            ${m.identity.languages.map(l => `<span class="pill pill-gray">${l}</span>`).join('')}
+          </div>
+        </div>
+        <div style="margin-left:auto">
+          ${renderSparkline(p.views, p.calls)}
+          <div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:2px">7d trend</div>
+        </div>
+      </div>
+
+      <!-- Performance metrics -->
+      <div class="perf-grid">
+        <div class="perf-item">
+          <div class="perf-val">${p.views.toLocaleString('en-IN')}</div>
+          <div class="perf-lbl">Views (30d)</div>
+          <div class="perf-delta ${p.delta_7d.views_pct >= 0 ? 'pos' : 'neg'}">
+            ${p.delta_7d.views_pct >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(p.delta_7d.views_pct * 100))}% 7d
+          </div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-val">${p.calls}</div>
+          <div class="perf-lbl">Calls (30d)</div>
+          <div class="perf-delta ${p.delta_7d.calls_pct >= 0 ? 'pos' : 'neg'}">
+            ${p.delta_7d.calls_pct >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(p.delta_7d.calls_pct * 100))}% 7d
+          </div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-val">${(p.ctr * 100).toFixed(1)}%</div>
+          <div class="perf-lbl">CTR (30d)</div>
+          <div class="perf-delta ${p.ctr >= 0.03 ? 'pos' : 'neg'}">
+            ${p.ctr >= 0.03 ? '▲ above' : '▼ below'} peer median
+          </div>
+        </div>
+        <div class="perf-item">
+          <div class="perf-val">${m.offers.length}</div>
+          <div class="perf-lbl">Active Offers</div>
+          <div class="perf-delta pos">${m.offers.map(o => o.title).join(', ') || 'No offers'}</div>
+        </div>
+      </div>
+
+      <!-- CTR bar vs peer -->
+      <div class="ctr-bar-section">
+        <div class="ctr-bar-label">
+          <span>CTR Performance</span>
+          <span style="color:var(--amber)">▲ Peer median: 3.5%</span>
+        </div>
+        <div class="ctr-bar-track">
+          <div class="ctr-bar-fill" style="width:${ctrPct}%"></div>
+          <div class="ctr-peer-line" style="left:${peerPct}%">
+            <span class="ctr-peer-label">peer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signals -->
+      <div class="section-divider" style="margin:14px 0"></div>
+      <div class="section-title">📡 Derived Signals</div>
+      <div class="signals-section">
+        ${m.signals.map(s => `<span class="signal-pill ${signalClass(s)}">${s}</span>`).join('')}
+      </div>
+    </div>
+
+    <!-- Triggers for this merchant -->
+    ${merchantTriggers.length ? `
+    <div class="merchant-detail-card">
+      <div class="section-title">⚡ Active Triggers (${merchantTriggers.length})</div>
+      ${merchantTriggers.map(t => `
+        <div class="trg-item">
+          <div class="trg-urgency u${t.urgency}">U${t.urgency}</div>
+          <div class="trg-info">
+            <div class="trg-kind">${t.kind.replace(/_/g,' ')}</div>
+            <div class="trg-merchant" style="font-size:11px;color:var(--text-muted)">${t.id}</div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="quickCompose('${m.merchant_id}','${t.id}')">Compose →</button>
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
+  `;
+}
+
+function quickCompose(merchantId, triggerId) {
+  switchTab('compose');
+  const ms = document.getElementById('compose-merchant-select');
+  ms.value = merchantId;
+  onComposeMerchantChange();
+  setTimeout(() => {
+    document.getElementById('compose-trigger-select').value = triggerId;
+    onComposeTriggerChange();
+  }, 50);
+}
+
+/* ============================================================
+   DASHBOARD TAB
+   ============================================================ */
+function renderDashboard() {
+  // Stat counters — animate
+  animateCounter('stat-merchants', MERCHANTS.length, 0);
+  animateCounter('stat-triggers', TRIGGERS.length, 100);
+
+  const highUrgency = TRIGGERS.filter(t => t.urgency >= 4).length;
+  document.getElementById('stat-triggers-high').textContent = `${highUrgency} high urgency`;
+
+  const avgCtr = MERCHANTS.reduce((s, m) => s + m.performance.ctr, 0) / MERCHANTS.length;
+  setTimeout(() => {
+    document.getElementById('stat-ctr').textContent = (avgCtr * 100).toFixed(1) + '%';
+    document.getElementById('stat-ctr-delta').textContent = avgCtr > 0.035 ? '▲ above peer median' : '▼ below peer median';
+  }, 200);
+
+  const active = MERCHANTS.filter(m => m.subscription.status === 'active').length;
+  animateCounter('stat-active', active, 200);
+  document.getElementById('stat-active-pct').textContent = `${Math.round(active / MERCHANTS.length * 100)}% active rate`;
+
+  // Heatmap
+  renderHeatmap();
+
+  // Category breakdown
+  renderCategoryBreakdown();
+
+  // Trigger list
+  renderTriggerUrgencyList();
+}
+
+function animateCounter(id, target, delay = 0) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  setTimeout(() => {
+    let current = 0;
+    const step = Math.ceil(target / 30);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current;
+      if (current >= target) clearInterval(timer);
+    }, 30);
+  }, delay);
+}
+
+function renderHeatmap() {
+  const grid = document.getElementById('heatmap-grid');
+  // Build a map: merchant_id → set of urgencies
+  const urgencyMap = {};
+  TRIGGERS.forEach(t => {
+    if (!urgencyMap[t.merchant_id]) urgencyMap[t.merchant_id] = new Set();
+    urgencyMap[t.merchant_id].add(t.urgency);
+  });
+
+  grid.innerHTML = MERCHANTS.map(m => {
+    const icon = CATEGORY_ICONS[m.category_slug] || '🏪';
+    const urg = urgencyMap[m.merchant_id] || new Set();
+    const cells = [1,2,3,4,5].map(u => {
+      if (urg.has(u)) return `<div class="heatmap-cell u${u}" title="${m.identity.name} — U${u}">U${u}</div>`;
+      return `<div class="heatmap-cell empty">—</div>`;
+    }).join('');
+    return `
+      <div class="heatmap-row">
+        <div class="heatmap-label" title="${m.identity.name}">${icon} ${m.identity.name}</div>
+        ${cells}
+      </div>`;
+  }).join('');
+}
+
+function renderCategoryBreakdown() {
+  const cats = {};
+  MERCHANTS.forEach(m => {
+    cats[m.category_slug] = (cats[m.category_slug] || 0) + 1;
+  });
+  const maxCount = Math.max(...Object.values(cats));
+  document.getElementById('category-breakdown').innerHTML = Object.entries(cats).map(([slug, count]) => `
+    <div class="cat-item">
+      <span class="cat-emoji">${CATEGORY_ICONS[slug]}</span>
+      <span class="cat-name" style="text-transform:capitalize">${slug}</span>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar" style="width:${(count/maxCount)*100}%"></div>
+      </div>
+      <span class="cat-count">${count}</span>
+    </div>
+  `).join('');
+}
+
+function renderTriggerUrgencyList() {
+  const sorted = [...TRIGGERS].sort((a, b) => b.urgency - a.urgency).slice(0, 10);
+  document.getElementById('trigger-urgency-list').innerHTML = sorted.map(t => {
+    const m = MERCHANTS.find(x => x.merchant_id === t.merchant_id);
+    return `
+      <div class="trg-item">
+        <div class="trg-urgency u${t.urgency}">U${t.urgency}</div>
+        <div class="trg-info">
+          <div class="trg-kind">${t.kind.replace(/_/g,' ')}</div>
+          <div class="trg-merchant">${m ? m.identity.name : t.merchant_id}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   COMPOSE TAB
+   ============================================================ */
+function renderComposeSelects() {
+  const ms = document.getElementById('compose-merchant-select');
+  ms.innerHTML = '<option value="">Choose a merchant…</option>' +
+    MERCHANTS.map(m => `<option value="${m.merchant_id}">${CATEGORY_ICONS[m.category_slug]} ${m.identity.name} — ${m.identity.city}</option>`).join('');
+}
+
+function onComposeMerchantChange() {
+  const merchantId = document.getElementById('compose-merchant-select').value;
+  state.composeMerchantId = merchantId || null;
+  state.composeTrigger = null;
+
+  const tsel = document.getElementById('compose-trigger-select');
+  const loadBtn = document.getElementById('btn-load-contexts');
+  const composeBtn = document.getElementById('btn-compose');
+
+  if (!merchantId) {
+    tsel.innerHTML = '<option value="">First select a merchant…</option>';
+    tsel.disabled = true;
+    loadBtn.disabled = true;
+    composeBtn.disabled = true;
+    return;
+  }
+
+  const merchantTriggers = TRIGGERS.filter(t => t.merchant_id === merchantId);
+  tsel.innerHTML = '<option value="">Choose a trigger…</option>' +
+    merchantTriggers.map(t => `<option value="${t.id}">[U${t.urgency}] ${t.kind.replace(/_/g,' ')} — ${t.id}</option>`).join('');
+  tsel.disabled = false;
+  loadBtn.disabled = false;
+  composeBtn.disabled = true;
+  document.getElementById('ctx-load-status').textContent = '';
+}
+
+function onComposeTriggerChange() {
+  const tId = document.getElementById('compose-trigger-select').value;
+  state.composeTrigger = tId ? TRIGGERS.find(t => t.id === tId) : null;
+  const composeBtn = document.getElementById('btn-compose');
+  composeBtn.disabled = !tId;
+}
+
+async function loadContextsForCompose() {
+  const btn = document.getElementById('btn-load-contexts');
+  const statusEl = document.getElementById('ctx-load-status');
+  const merchantId = state.composeMerchantId;
+  if (!merchantId) return;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading…';
+  statusEl.textContent = 'Pushing contexts to bot…';
+
+  const m = MERCHANTS.find(x => x.merchant_id === merchantId);
+  if (!m) return;
+
+  let loaded = 0;
+
+  // Category context
+  const cat = CATEGORY_CONTEXTS[m.category_slug];
+  if (cat) {
+    await api('POST', '/v1/context', { scope:'category', context_id:m.category_slug, version:2, payload:cat, delivered_at:new Date().toISOString() });
+    loaded++;
+  }
+
+  // Merchant context
+  await api('POST', '/v1/context', { scope:'merchant', context_id:merchantId, version:2, payload:m, delivered_at:new Date().toISOString() });
+  loaded++;
+
+  // Any triggers for this merchant
+  const merchantTriggers = TRIGGERS.filter(t => t.merchant_id === merchantId);
+  for (const t of merchantTriggers) {
+    await api('POST', '/v1/context', { scope:'trigger', context_id:t.id, version:2, payload:t, delivered_at:new Date().toISOString() });
+    loaded++;
+  }
+
+  // Customer contexts if relevant
+  for (const [cid, cpayload] of Object.entries(CUSTOMER_CONTEXTS)) {
+    if (cpayload.merchant_id === merchantId) {
+      await api('POST', '/v1/context', { scope:'customer', context_id:cid, version:2, payload:cpayload, delivered_at:new Date().toISOString() });
+      loaded++;
+    }
+  }
+
+  statusEl.textContent = `✓ ${loaded} contexts loaded`;
+  statusEl.style.color = 'var(--green)';
+  btn.textContent = '✓ Contexts Loaded';
+  btn.disabled = false;
+  await checkHealth();
+}
+
+async function composeTick() {
+  const trigger = state.composeTrigger;
+  if (!trigger) return;
+
+  const composeBtn = document.getElementById('btn-compose');
+  const errorEl = document.getElementById('compose-error');
+  errorEl.style.display = 'none';
+
+  composeBtn.classList.add('loading');
+  document.getElementById('compose-btn-text').textContent = 'Composing…';
+  composeBtn.disabled = true;
+
+  const r = await api('POST', '/v1/tick', {
+    now: new Date().toISOString(),
+    available_triggers: [trigger.id]
+  });
+
+  composeBtn.classList.remove('loading');
+  document.getElementById('compose-btn-text').textContent = '⚡ Compose Message';
+  composeBtn.disabled = false;
+
+  if (!r.ok) {
+    errorEl.textContent = `Error ${r.status}: ${r.data.detail || JSON.stringify(r.data)}`;
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const actions = r.data.actions || [];
+  if (actions.length === 0) {
+    errorEl.textContent = 'Bot returned 0 actions — contexts may be missing or trigger was suppressed. Try loading contexts again.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const action = actions[0];
+  state.composeResult = action;
+  state.composeConvId = action.conversation_id;
+  renderComposedBubble(action);
+
+  // Add to conversations list
+  const m = MERCHANTS.find(x => x.merchant_id === action.merchant_id);
+  addConversation({
+    conv_id: action.conversation_id,
+    merchant_id: action.merchant_id,
+    merchant_name: m ? m.identity.name : action.merchant_id,
+    trigger_kind: trigger.kind,
+    turns: [{ from: 'vera', msg: action.body, ts: new Date().toLocaleTimeString('en-IN', { hour12: true }) }],
+    ended: false,
+    turnNumber: 1,
+  });
+  updateConvBadge();
+}
+
+function renderComposedBubble(action) {
+  document.getElementById('bubble-placeholder').style.display = 'none';
+  const content = document.getElementById('bubble-content');
+  content.style.display = 'block';
+
+  const m = MERCHANTS.find(x => x.merchant_id === action.merchant_id);
+  const icon = m ? CATEGORY_ICONS[m.category_slug] : '🤖';
+
+  content.innerHTML = `
+    <div class="wa-bubble-wrap">
+      <div class="wa-bubble">
+        <div class="wa-bubble-header">
+          <div class="wa-sender-avatar">V</div>
+          <div>
+            <div class="wa-sender-name">Vera</div>
+            <div style="font-size:10px;color:var(--text-muted)">via magicpin AI</div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">${new Date().toLocaleTimeString('en-IN',{hour12:true})}</div>
+        </div>
+        <div class="wa-bubble-body">${escHtml(action.body || '')}</div>
+        <div class="wa-bubble-footer">
+          <div class="wa-meta-row">
+            <span class="wa-meta-badge wa-cta">CTA: ${action.cta || 'open_ended'}</span>
+            <span class="wa-meta-badge wa-send-as">📤 ${action.send_as || 'vera'}</span>
+            ${action.suppression_key ? `<span class="wa-meta-badge wa-sup-key">🔑 ${action.suppression_key}</span>` : ''}
+          </div>
+          ${action.rationale ? `
+          <div class="rationale-toggle" onclick="toggleRationale(this)">
+            <span>▶</span> Show rationale
+          </div>
+          <div class="rationale-body">${escHtml(action.rationale)}</div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="bubble-actions">
+      <button class="btn btn-sm btn-secondary" onclick="copyMessage()">📋 Copy</button>
+      <button class="btn btn-sm btn-primary" onclick="openConversation('${action.conversation_id}')">💬 Continue Conversation</button>
+    </div>
+  `;
+}
+
+function toggleRationale(el) {
+  const body = el.nextElementSibling;
+  body.classList.toggle('open');
+  el.querySelector('span').textContent = body.classList.contains('open') ? '▼' : '▶';
+  el.childNodes[1].textContent = body.classList.contains('open') ? ' Hide rationale' : ' Show rationale';
+}
+
+function copyMessage() {
+  if (state.composeResult) {
+    navigator.clipboard.writeText(state.composeResult.body || '').then(() => {
+      const btn = document.querySelector('.bubble-actions .btn-secondary');
+      if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000); }
+    });
+  }
+}
+
+function openConversation(convId) {
+  state.activeConvId = convId;
+  switchTab('conversations');
+  renderConversationList();
+  renderActiveConversation();
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   CONVERSATIONS TAB
+   ============================================================ */
+function addConversation(conv) {
+  const existing = state.conversations.findIndex(c => c.conv_id === conv.conv_id);
+  if (existing >= 0) {
+    state.conversations[existing] = conv;
+  } else {
+    state.conversations.unshift(conv);
+  }
+  renderConversationList();
+}
+
+function updateConvBadge() {
+  const badge = document.getElementById('badge-conv');
+  const active = state.conversations.filter(c => !c.ended).length;
+  if (active > 0) {
+    badge.style.display = '';
+    badge.textContent = active;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderConversationList() {
+  const list = document.getElementById('conv-list');
+  const empty = document.getElementById('conv-list-empty');
+
+  if (state.conversations.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = state.conversations.map(c => {
+    const lastTurn = c.turns[c.turns.length - 1];
+    const preview = lastTurn ? lastTurn.msg.substring(0, 50) + '…' : 'No messages yet';
+    const isActive = state.activeConvId === c.conv_id;
+    return `
+      <div class="conv-item ${isActive ? 'active' : ''}" onclick="selectConversation('${c.conv_id}')">
+        <div class="conv-item-name">${escHtml(c.merchant_name)}</div>
+        <div class="conv-item-preview">${escHtml(preview)}</div>
+        <div class="conv-item-meta">
+          <span>${c.trigger_kind.replace(/_/g,' ')}</span>
+          <span>${c.ended ? '🔒 Ended' : `Turn ${c.turnNumber}`}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectConversation(convId) {
+  state.activeConvId = convId;
+  renderConversationList();
+  renderActiveConversation();
+}
+
+function renderActiveConversation() {
+  const conv = state.conversations.find(c => c.conv_id === state.activeConvId);
+  if (!conv) return;
+
+  const header = document.getElementById('conv-header-name');
+  const status = document.getElementById('conv-header-status');
+  const turnBadge = document.getElementById('conv-turn-badge');
+  const inputArea = document.getElementById('conv-input-area');
+
+  header.textContent = conv.merchant_name;
+  status.textContent = conv.trigger_kind.replace(/_/g, ' ');
+  turnBadge.textContent = `Turn ${conv.turnNumber}`;
+
+  if (conv.ended) {
+    inputArea.style.opacity = '0.4';
+    inputArea.style.pointerEvents = 'none';
+  } else {
+    inputArea.style.opacity = '1';
+    inputArea.style.pointerEvents = 'auto';
+  }
+
+  renderChatArea(conv);
+}
+
+function renderChatArea(conv) {
+  const area = document.getElementById('chat-area');
+  let html = conv.turns.map(t => {
+    const isVera = t.from === 'vera';
+    return `
+      <div class="chat-msg ${isVera ? 'vera' : 'merchant'}">
+        <div class="chat-sender">${isVera ? 'Vera' : 'Merchant'}</div>
+        <div class="chat-bubble">${escHtml(t.msg)}</div>
+        <div class="chat-timestamp">${t.ts || ''}</div>
+      </div>`;
+  }).join('');
+
+  if (conv.ended) {
+    html += `<div class="conv-ended-divider">Conversation ended</div>`;
+  }
+
+  area.innerHTML = html;
+  area.scrollTop = area.scrollHeight;
+}
+
+// Detect auto-reply
+const AUTO_REPLY_PATTERNS = [
+  /thank you for contacting/i,
+  /aapki madad ke liye shukriya/i,
+  /this is an automated/i,
+  /out of office/i,
+  /i am currently unavailable/i,
+  /your message has been received/i,
+  /automated (assistant|response|reply)/i,
+];
+
+function isAutoReply(msg) {
+  return AUTO_REPLY_PATTERNS.some(p => p.test(msg));
+}
+
+async function sendReply(message) {
+  const conv = state.conversations.find(c => c.conv_id === state.activeConvId);
+  if (!conv || conv.ended) return;
+
+  const ts = new Date().toLocaleTimeString('en-IN', { hour12: true });
+
+  // Add merchant turn locally
+  conv.turns.push({ from: 'merchant', msg: message, ts });
+  conv.turnNumber++;
+  renderChatArea(conv);
+  renderConversationList();
+
+  // Check for auto-reply
+  const autoDetected = isAutoReply(message);
+  const indicator = document.getElementById('auto-reply-indicator');
+  if (autoDetected) {
+    indicator.classList.add('active');
+    setTimeout(() => indicator.classList.remove('active'), 3500);
+  }
+
+  // Call API
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: conv.conv_id,
+    merchant_id: conv.merchant_id,
+    customer_id: conv.customer_id || null,
+    from_role: 'merchant',
+    message: message,
+    received_at: new Date().toISOString(),
+    turn_number: conv.turnNumber,
+  });
+
+  if (!r.ok) {
+    conv.turns.push({ from: 'vera', msg: `[Error ${r.status}]`, ts: new Date().toLocaleTimeString('en-IN',{hour12:true}) });
+    renderChatArea(conv);
+    return;
+  }
+
+  const res = r.data;
+  document.getElementById('conv-turn-badge').textContent = `Turn ${conv.turnNumber}`;
+
+  if (res.action === 'send') {
+    conv.turns.push({ from: 'vera', msg: res.body || '', ts: new Date().toLocaleTimeString('en-IN',{hour12:true}) });
+    renderChatArea(conv);
+  } else if (res.action === 'wait') {
+    conv.turns.push({ from: 'vera', msg: `[⏳ Vera is waiting ${Math.round((res.wait_seconds||3600)/60)} min]`, ts: new Date().toLocaleTimeString('en-IN',{hour12:true}) });
+    renderChatArea(conv);
+  } else if (res.action === 'end') {
+    conv.ended = true;
+    conv.turns.push({ from: 'vera', msg: `[Conversation ended: ${res.rationale || 'graceful exit'}]`, ts: new Date().toLocaleTimeString('en-IN',{hour12:true}) });
+    renderChatArea(conv);
+    renderConversationList();
+    updateConvBadge();
+    const inputArea = document.getElementById('conv-input-area');
+    inputArea.style.opacity = '0.4';
+    inputArea.style.pointerEvents = 'none';
+  }
+}
+
+/* ============================================================
+   JUDGE SCENARIOS
+   ============================================================ */
+const JUDGE_SCENARIOS = [
+  {
+    id: 'warmup',
+    icon: '🌡️',
+    name: 'Warmup',
+    desc: 'Verify the bot correctly responds to health check, loads all contexts, and produces at least one composed message from /v1/tick.',
+    steps: [
+      { label: 'Healthz check', fn: runWarmupHealthz },
+      { label: 'Context seed', fn: runWarmupContext },
+      { label: 'Tick + compose', fn: runWarmupTick },
+    ]
+  },
+  {
+    id: 'auto_reply',
+    icon: '🤖',
+    name: 'Auto-reply Hell',
+    desc: 'Send the same canned auto-reply message 4 times in a row. Bot must detect and exit gracefully — not keep re-engaging.',
+    steps: [
+      { label: 'Setup conversation', fn: runAutoReplySetup },
+      { label: 'Send auto-reply ×4', fn: runAutoReplyLoop },
+      { label: 'Verify graceful exit', fn: runAutoReplyVerify },
+    ]
+  },
+  {
+    id: 'intent',
+    icon: '🎯',
+    name: 'Intent Transition',
+    desc: 'After 1 qualifying turn, say "Ok let\'s do it". Bot must switch to action mode immediately — not ask another qualifying question.',
+    steps: [
+      { label: 'Setup conversation', fn: runIntentSetup },
+      { label: 'First qualifying reply', fn: runIntentQualify },
+      { label: 'Intent signal "ok let\'s do it"', fn: runIntentSignal },
+      { label: 'Verify action mode (no re-qualifying)', fn: runIntentVerify },
+    ]
+  },
+  {
+    id: 'hostile',
+    icon: '🛡️',
+    name: 'Hostile / Off-topic',
+    desc: 'Reply with an off-topic or rude message. Bot must stay on-mission politely and not abandon the conversation goal.',
+    steps: [
+      { label: 'Setup conversation', fn: runHostileSetup },
+      { label: 'Send hostile message', fn: runHostileMsg },
+      { label: 'Verify polite on-mission response', fn: runHostileVerify },
+    ]
+  }
+];
+
+// Per-scenario state
+const judgeState = {};
+JUDGE_SCENARIOS.forEach(s => { judgeState[s.id] = { status: 'idle', turns: [], progress: 0 }; });
+
+function renderJudgeScenarios() {
+  const grid = document.getElementById('judge-scenarios-grid');
+  grid.innerHTML = JUDGE_SCENARIOS.map(s => `
+    <div class="scenario-card" id="scenario-${s.id}">
+      <div class="scenario-icon">${s.icon}</div>
+      <div class="scenario-name">${s.name}</div>
+      <div class="scenario-desc">${s.desc}</div>
+      <div class="scenario-status" id="scenario-status-${s.id}">
+        <span class="result-badge" id="result-badge-${s.id}">Idle</span>
+      </div>
+      <div class="progress-bar-wrap" id="progress-wrap-${s.id}">
+        <div class="progress-bar-fill" id="progress-bar-${s.id}" style="width:0%"></div>
+      </div>
+      <button class="btn btn-secondary btn-full" id="btn-run-${s.id}" onclick="runScenario('${s.id}')">▶ Run</button>
+      <div class="judge-turn-log" id="turn-log-${s.id}"></div>
+      <div class="scenario-result" id="scenario-result-${s.id}"></div>
+    </div>
+  `).join('');
+}
+
+function setScenarioRunning(id) {
+  const card = document.getElementById(`scenario-${id}`);
+  card.className = 'scenario-card running';
+  document.getElementById(`result-badge-${id}`).className = 'result-badge running';
+  document.getElementById(`result-badge-${id}`).textContent = '⏳ Running…';
+  document.getElementById(`progress-wrap-${id}`).classList.add('show');
+  document.getElementById(`btn-run-${id}`).disabled = true;
+  document.getElementById(`turn-log-${id}`).className = 'judge-turn-log show';
+  document.getElementById(`turn-log-${id}`).innerHTML = '';
+}
+
+function setScenarioProgress(id, pct) {
+  document.getElementById(`progress-bar-${id}`).style.width = pct + '%';
+}
+
+function addTurnLog(id, from, msg) {
+  const log = document.getElementById(`turn-log-${id}`);
+  log.innerHTML += `<div class="judge-turn"><span class="from ${from}">[${from.toUpperCase()}]</span> ${escHtml(msg.substring(0, 120))}${msg.length > 120 ? '…' : ''}</div>`;
+}
+
+function setScenarioResult(id, passed, detail) {
+  const card = document.getElementById(`scenario-${id}`);
+  card.className = `scenario-card ${passed ? 'passed' : 'failed'}`;
+  const badge = document.getElementById(`result-badge-${id}`);
+  badge.className = `result-badge ${passed ? 'pass' : 'fail'}`;
+  badge.textContent = passed ? '✓ PASSED' : '✗ FAILED';
+  const result = document.getElementById(`scenario-result-${id}`);
+  result.className = `scenario-result show ${passed ? 'pass' : 'fail'}`;
+  result.innerHTML = `<strong>${passed ? '✓ Pass' : '✗ Fail'}:</strong> ${escHtml(detail)}`;
+  document.getElementById(`btn-run-${id}`).disabled = false;
+  setScenarioProgress(id, 100);
+}
+
+/* ---- SCENARIO RUNNER FUNCTIONS ---- */
+
+// Helper to get a test conversation ID
+function testConvId(scenarioId) {
+  return `judge_${scenarioId}_${Date.now()}`;
+}
+
+// Warmup scenario
+async function runWarmupHealthz() {
+  const r = await api('GET', '/v1/healthz');
+  if (!r.ok) throw new Error('Healthz returned non-200');
+  if (r.data.status !== 'ok') throw new Error('Bot status not ok');
+  return r.data;
+}
+
+async function runWarmupContext() {
+  // Push one category + one merchant
+  const cat = CATEGORY_CONTEXTS.dentists;
+  const m = MERCHANTS[0];
+  const r1 = await api('POST', '/v1/context', { scope:'category', context_id:'dentists', version:5, payload:cat, delivered_at:new Date().toISOString() });
+  if (!r1.ok && r1.data.reason !== 'stale_version') throw new Error('Context push failed');
+  const r2 = await api('POST', '/v1/context', { scope:'merchant', context_id:m.merchant_id, version:5, payload:m, delivered_at:new Date().toISOString() });
+  if (!r2.ok && r2.data.reason !== 'stale_version') throw new Error('Merchant context push failed');
+  return { cat: r1.data, merchant: r2.data };
+}
+
+async function runWarmupTick() {
+  const trigger = TRIGGERS[0]; // research_digest
+  const r = await api('POST', '/v1/context', { scope:'trigger', context_id:trigger.id, version:5, payload:trigger, delivered_at:new Date().toISOString() });
+  const r2 = await api('POST', '/v1/tick', { now:new Date().toISOString(), available_triggers:[trigger.id] });
+  if (!r2.ok) throw new Error('Tick call failed');
+  if (!r2.data.actions) throw new Error('No actions array returned');
+  return r2.data;
+}
+
+// Auto-reply scenario
+let autoReplyConvId = null;
+async function runAutoReplySetup() {
+  autoReplyConvId = testConvId('autoreply');
+  // Seed contexts
+  const m = MERCHANTS[2]; // Studio11 — salon
+  await api('POST', '/v1/context', { scope:'category', context_id:'salons', version:5, payload:CATEGORY_CONTEXTS.salons, delivered_at:new Date().toISOString() });
+  await api('POST', '/v1/context', { scope:'merchant', context_id:m.merchant_id, version:5, payload:m, delivered_at:new Date().toISOString() });
+  const trg = TRIGGERS.find(t => t.id === 'trg_006_festival_diwali');
+  await api('POST', '/v1/context', { scope:'trigger', context_id:trg.id, version:5, payload:trg, delivered_at:new Date().toISOString() });
+  const tickR = await api('POST', '/v1/tick', { now:new Date().toISOString(), available_triggers:[trg.id] });
+  if (!tickR.ok || !(tickR.data.actions||[]).length) throw new Error('No initial action from tick');
+  autoReplyConvId = (tickR.data.actions[0] || {}).conversation_id || autoReplyConvId;
+  return tickR.data.actions[0];
+}
+
+async function runAutoReplyLoop() {
+  const AUTO_MSG = 'Thank you for contacting us! Our team will get back to you soon.';
+  const m = MERCHANTS[2];
+  let lastResponse = null;
+  for (let i = 0; i < 4; i++) {
+    const r = await api('POST', '/v1/reply', {
+      conversation_id: autoReplyConvId,
+      merchant_id: m.merchant_id,
+      from_role: 'merchant',
+      message: AUTO_MSG,
+      received_at: new Date().toISOString(),
+      turn_number: i + 2,
+    });
+    if (!r.ok) throw new Error(`Reply ${i+1} failed`);
+    lastResponse = r.data;
+    if (lastResponse.action === 'end') break; // good — exited early
+  }
+  return lastResponse;
+}
+
+async function runAutoReplyVerify() {
+  // Attempt one more reply — should get 'end' response
+  const m = MERCHANTS[2];
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: autoReplyConvId,
+    merchant_id: m.merchant_id,
+    from_role: 'merchant',
+    message: 'Thank you for contacting us! Our team will get back to you soon.',
+    received_at: new Date().toISOString(),
+    turn_number: 8,
+  });
+  if (!r.ok) throw new Error('Final reply call failed');
+  // Either 'end' or already ended = passed
+  if (r.data.action !== 'end' && r.data.action !== 'send') throw new Error(`Expected end/send after auto-replies, got: ${r.data.action}`);
+  return r.data;
+}
+
+// Intent scenario
+let intentConvId = null;
+async function runIntentSetup() {
+  const m = MERCHANTS[0]; // Dr Meera
+  await api('POST', '/v1/context', { scope:'category', context_id:'dentists', version:5, payload:CATEGORY_CONTEXTS.dentists, delivered_at:new Date().toISOString() });
+  await api('POST', '/v1/context', { scope:'merchant', context_id:m.merchant_id, version:5, payload:m, delivered_at:new Date().toISOString() });
+  const trg = TRIGGERS.find(t => t.id === 'trg_022_cde_webinar_dentists');
+  await api('POST', '/v1/context', { scope:'trigger', context_id:trg.id, version:5, payload:trg, delivered_at:new Date().toISOString() });
+  const tickR = await api('POST', '/v1/tick', { now:new Date().toISOString(), available_triggers:[trg.id] });
+  if (!tickR.ok || !(tickR.data.actions||[]).length) throw new Error('No initial action');
+  intentConvId = (tickR.data.actions[0] || {}).conversation_id;
+  return tickR.data.actions[0];
+}
+
+async function runIntentQualify() {
+  const m = MERCHANTS[0];
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: intentConvId,
+    merchant_id: m.merchant_id,
+    from_role: 'merchant',
+    message: 'This sounds interesting, tell me more.',
+    received_at: new Date().toISOString(),
+    turn_number: 2,
+  });
+  if (!r.ok) throw new Error('First reply failed');
+  return r.data;
+}
+
+async function runIntentSignal() {
+  const m = MERCHANTS[0];
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: intentConvId,
+    merchant_id: m.merchant_id,
+    from_role: 'merchant',
+    message: 'Ok let\'s do it',
+    received_at: new Date().toISOString(),
+    turn_number: 3,
+  });
+  if (!r.ok) throw new Error('Intent reply failed');
+  return r.data;
+}
+
+async function runIntentVerify() {
+  // Check the response from the previous turn — should be action-mode not re-qualifying
+  const m = MERCHANTS[0];
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: intentConvId,
+    merchant_id: m.merchant_id,
+    from_role: 'merchant',
+    message: 'Yes proceed',
+    received_at: new Date().toISOString(),
+    turn_number: 4,
+  });
+  if (!r.ok) throw new Error('Verify reply failed');
+  if (r.data.action === 'send' && r.data.body) return r.data;
+  if (r.data.action === 'end') return r.data; // graceful exit also acceptable
+  throw new Error(`Unexpected action: ${r.data.action}`);
+}
+
+// Hostile scenario
+let hostileConvId = null;
+async function runHostileSetup() {
+  const m = MERCHANTS[5]; // Mylari restaurant
+  await api('POST', '/v1/context', { scope:'category', context_id:'restaurants', version:5, payload:CATEGORY_CONTEXTS.restaurants, delivered_at:new Date().toISOString() });
+  await api('POST', '/v1/context', { scope:'merchant', context_id:m.merchant_id, version:5, payload:m, delivered_at:new Date().toISOString() });
+  const trg = TRIGGERS.find(t => t.id === 'trg_012_milestone_mylari');
+  await api('POST', '/v1/context', { scope:'trigger', context_id:trg.id, version:5, payload:trg, delivered_at:new Date().toISOString() });
+  const tickR = await api('POST', '/v1/tick', { now:new Date().toISOString(), available_triggers:[trg.id] });
+  if (!tickR.ok || !(tickR.data.actions||[]).length) throw new Error('No initial action');
+  hostileConvId = (tickR.data.actions[0]||{}).conversation_id;
+  return tickR.data.actions[0];
+}
+
+async function runHostileMsg() {
+  const m = MERCHANTS[5];
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: hostileConvId,
+    merchant_id: m.merchant_id,
+    from_role: 'merchant',
+    message: 'Stop messaging me! I don\'t care about any of this. Can you help me file my GST returns instead?',
+    received_at: new Date().toISOString(),
+    turn_number: 2,
+  });
+  if (!r.ok) throw new Error('Hostile reply call failed');
+  return r.data;
+}
+
+async function runHostileVerify() {
+  // Bot should respond politely, stay on-mission or gracefully end
+  const r = await api('POST', '/v1/reply', {
+    conversation_id: hostileConvId,
+    merchant_id: MERCHANTS[5].merchant_id,
+    from_role: 'merchant',
+    message: 'Ok fine, what were you saying',
+    received_at: new Date().toISOString(),
+    turn_number: 3,
+  });
+  if (!r.ok) throw new Error('Verify call failed');
+  if (r.data.action === 'send' || r.data.action === 'end') return r.data;
+  throw new Error(`Unexpected action: ${r.data.action}`);
+}
+
+/* ============================================================
+   SCENARIO RUNNER ORCHESTRATOR
+   ============================================================ */
+async function runScenario(scenarioId) {
+  const scenario = JUDGE_SCENARIOS.find(s => s.id === scenarioId);
+  if (!scenario) return;
+
+  setScenarioRunning(scenarioId);
+  const totalSteps = scenario.steps.length;
+  let passed = true;
+  let detail = '';
+  const stepResults = [];
+
+  for (let i = 0; i < scenario.steps.length; i++) {
+    const step = scenario.steps[i];
+    setScenarioProgress(scenarioId, Math.round(((i) / totalSteps) * 90));
+    addTurnLog(scenarioId, 'judge', `Step ${i+1}: ${step.label}…`);
+    try {
+      const result = await step.fn();
+      stepResults.push(result);
+      addTurnLog(scenarioId, 'vera', result ? `action:${result.action || 'ok'} ${result.body ? '— ' + result.body.substring(0, 60) + '…' : ''}` : 'ok');
+    } catch (err) {
+      passed = false;
+      detail = `Step "${step.label}" failed: ${err.message}`;
+      addTurnLog(scenarioId, 'judge', `✗ FAILED: ${err.message}`);
+      break;
+    }
+  }
+
+  if (passed) {
+    const last = stepResults[stepResults.length - 1];
+    detail = `All ${totalSteps} steps passed. Last action: ${last ? (last.action || 'accepted') : 'ok'}`;
+    if (last && last.body) detail += ` — "${last.body.substring(0, 80)}…"`;
+  }
+
+  setScenarioResult(scenarioId, passed, detail);
+}
+
+async function runAllScenarios() {
+  const btn = document.getElementById('btn-run-all');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running all…';
+
+  for (const s of JUDGE_SCENARIOS) {
+    await runScenario(s.id);
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run All Scenarios';
+}
+
+/* ============================================================
+   COMPOSE EVENT WIRING
+   ============================================================ */
+document.getElementById('compose-merchant-select').addEventListener('change', onComposeMerchantChange);
+document.getElementById('compose-trigger-select').addEventListener('change', onComposeTriggerChange);
+document.getElementById('btn-load-contexts').addEventListener('click', loadContextsForCompose);
+document.getElementById('btn-compose').addEventListener('click', composeTick);
+document.getElementById('btn-run-all').addEventListener('click', runAllScenarios);
+
+// Conversations
+document.getElementById('btn-send-reply').addEventListener('click', () => {
+  const input = document.getElementById('conv-message-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  sendReply(msg);
+});
+
+document.getElementById('conv-message-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('btn-send-reply').click();
+  }
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const preset = btn.dataset.preset;
+    document.getElementById('conv-message-input').value = preset;
+    document.getElementById('conv-message-input').focus();
+  });
+});
+
+/* ============================================================
+   INITIALIZATION
+   ============================================================ */
+async function init() {
+  // Render static UI
+  renderMerchantList();
+  renderDashboard();
+  renderComposeSelects();
+  renderJudgeScenarios();
+
+  // Initial health + metadata check
+  await Promise.all([checkHealth(), fetchMetadata()]);
+
+  // Seed all base contexts
+  await seedContexts();
+
+  // Start periodic polling
+  setInterval(checkHealth, 10000);
+  setInterval(updateUptimeDisplay, 1000);
+
+  // Default to compose tab
+  switchTab('compose');
+}
+
+// Kick off
+init().catch(console.error);
+</script>
+</body>
+</html>
